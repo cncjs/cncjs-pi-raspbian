@@ -4,9 +4,7 @@ Raspberry PI distribution of CNCjs in a ready to deploy image. Includes some use
 CNCjs on Raspberry Pi w/ Raspbian
 =================================
 
-.. image:: https://cloud.githubusercontent.com/assets/447801/24392019/aa2d725e-13c4-11e7-9538-fd5f746a2130.png
-.. :scale: 50 %
-.. :alt: CNCjs logo
+![CNCjs logo](https://cloud.githubusercontent.com/assets/447801/24392019/aa2d725e-13c4-11e7-9538-fd5f746a2130.png)
 
 A [Raspberry Pi](http://www.raspberrypi.org/) distribution for CNCjs user to get started quickly. It includes the [CNCjs](https://github.com/cncjs/cncjs) software for out of the box functionality, [mjpg-streamer with RaspiCam support](https://github.com/jacksonliam/mjpg-streamer) for live viewing, and [FFmpeg](https://www.ffmpeg.org/) for recording. Several Pendants and Web UI's are also included. For a more complete introduction, see the [CNCjs Introduction](https://github.com/cncjs/cncjs/wiki/Introduction) section of the wiki page. All primary documentation still resides in the [CNCjs Wiki](https://github.com/cncjs/cncjs/wiki).
 
