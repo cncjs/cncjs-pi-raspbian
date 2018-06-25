@@ -1,0 +1,249 @@
+{
+  "version": "1.9.15",
+  "state": {
+    "session": {
+      "name": "",
+      "token": "",
+      "enabled": false
+    },
+    "workspace": {
+      "container": {
+        "default": {
+          "widgets": [
+            "visualizer"
+          ]
+        },
+        "primary": {
+          "show": true,
+          "widgets": [
+            "connection",
+            "console",
+            "webcam",
+            "webcam:295a5afd-ec8b-4426-ad40-6138d5275685",
+            "webcam:db22650b-48c8-4829-b197-68776734dc39",
+            "gcode",
+            "custom"
+          ]
+        },
+        "secondary": {
+          "show": true,
+          "widgets": [
+            "spindle",
+            "axes",
+            "grbl",
+            "probe",
+            "macro",
+            "laser"
+          ]
+        }
+      }
+    },
+    "widgets": {
+      "axes": {
+        "minimized": true,
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ],
+        "jog": {
+          "keypad": false,
+          "step": {
+            "imperial": 6,
+            "metric": 12
+          }
+        },
+        "mdi": {
+          "disabled": false
+        },
+        "shuttle": {
+          "feedrateMin": 500,
+          "feedrateMax": 2000,
+          "hertz": 10,
+          "overshoot": 1
+        }
+      },
+      "connection": {
+        "minimized": true,
+        "controller": {
+          "type": "Grbl"
+        },
+        "port": "/dev/ttyUSB0",
+        "baudrate": 115200,
+        "connection": {
+          "type": "serial",
+          "serial": {
+            "rtscts": false
+          }
+        },
+        "autoReconnect": true
+      },
+      "console": {
+        "minimized": true
+      },
+      "custom": {
+        "disabled": true,
+        "minimized": true,
+        "title": "TEST",
+        "url": "/cncjs-widget-boilerplate"
+      },
+      "gcode": {
+        "minimized": false
+      },
+      "grbl": {
+        "minimized": false,
+        "panel": {
+          "queueReports": {
+            "expanded": true
+          },
+          "statusReports": {
+            "expanded": true
+          },
+          "modalGroups": {
+            "expanded": true
+          }
+        }
+      },
+      "laser": {
+        "minimized": true,
+        "panel": {
+          "laserTest": {
+            "expanded": true
+          }
+        },
+        "test": {
+          "power": 100,
+          "duration": 100,
+          "maxS": 1000
+        }
+      },
+      "macro": {
+        "minimized": true
+      },
+      "marlin": {
+        "minimized": false,
+        "panel": {
+          "heaterControl": {
+            "expanded": true
+          },
+          "statusReports": {
+            "expanded": false
+          },
+          "modalGroups": {
+            "expanded": false
+          }
+        },
+        "heater": {
+          "extruder": 180,
+          "heatedBed": 60
+        }
+      },
+      "probe": {
+        "minimized": true,
+        "probeCommand": "G38.2",
+        "useTLO": false,
+        "probeDepth": 15.001,
+        "probeFeedrate": 40,
+        "touchPlateHeight": 15.001,
+        "retractionDistance": 10
+      },
+      "smoothie": {
+        "minimized": false,
+        "panel": {
+          "statusReports": {
+            "expanded": true
+          },
+          "modalGroups": {
+            "expanded": true
+          }
+        }
+      },
+      "spindle": {
+        "minimized": true,
+        "speed": 4
+      },
+      "tinyg": {
+        "minimized": false,
+        "panel": {
+          "powerManagement": {
+            "expanded": false
+          },
+          "queueReports": {
+            "expanded": true
+          },
+          "statusReports": {
+            "expanded": true
+          },
+          "modalGroups": {
+            "expanded": true
+          }
+        }
+      },
+      "visualizer": {
+        "minimized": false,
+        "disabled": false,
+        "projection": "orthographic",
+        "cameraMode": "pan",
+        "gcode": {
+          "displayName": true
+        },
+        "objects": {
+          "coordinateSystem": {
+            "visible": true
+          },
+          "gridLineNumbers": {
+            "visible": true
+          },
+          "toolhead": {
+            "visible": true
+          }
+        }
+      },
+      "webcam": {
+        "disabled": false,
+        "minimized": false,
+        "mediaSource": "mjpeg",
+        "deviceId": "",
+        "url": "http://cncjs:8080/?action=stream",
+        "geometry": {
+          "scale": 1,
+          "rotation": 0,
+          "flipHorizontally": false,
+          "flipVertically": false
+        },
+        "crosshair": false,
+        "muted": false
+      },
+      "webcam:db22650b-48c8-4829-b197-68776734dc39": {
+        "disabled": true,
+        "minimized": true,
+        "mediaSource": "mjpeg",
+        "deviceId": "",
+        "url": "http://192.168.8.60/videoany.mjpg?codectype=mjpeg&mjpeg_quant=99&mjpeg_qvalue=20&mjpeg_maxframe=3",
+        "geometry": {
+          "scale": 1,
+          "rotation": 0,
+          "flipHorizontally": false,
+          "flipVertically": false
+        },
+        "crosshair": false,
+        "muted": false
+      },
+      "webcam:295a5afd-ec8b-4426-ad40-6138d5275685": {
+        "disabled": false,
+        "minimized": false,
+        "mediaSource": "mjpeg",
+        "deviceId": "",
+        "url": "http://cncjs:8081/?action=stream",
+        "geometry": {
+          "scale": 1,
+          "rotation": 0,
+          "flipHorizontally": false,
+          "flipVertically": false
+        },
+        "crosshair": false,
+        "muted": false
+      }
+    }
+  }
+}

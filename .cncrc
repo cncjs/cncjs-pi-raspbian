@@ -1,0 +1,197 @@
+{
+    "secret": "3Gwjnh3k8JLMpM7TnJcV5d2sEj4mJCdn",
+    "watchDirectory": "/home/pi/watch",
+    "accessTokenLifetime": "30d",
+    "allowRemoteAccess": false,
+    "state": {
+        "checkForUpdates": true,
+        "controller": {
+            "exception": {
+                "ignoreErrors": false
+            }
+        }
+    },
+    "commands": [
+        {
+            "text": "Update CNCjs",
+            "id": "9fd6c4ce-53aa-4162-a306-d292eeb7bbee",
+            "enabled": true,
+            "commands": "sudo npm install npm@latest -g; sudo npm install -g cncjs --unsafe-perm; pm2 restart cnc; pm2 save; sudo npm install pm2 -g; pm2 update",
+            "mtime": 1489705570166,
+            "title": "Update [CNCjs]"
+        },
+        {
+            "text": "Update System",
+            "id": "e9db85c7-d574-4bf0-a366-4620b9201151",
+            "enabled": true,
+            "commands": "sudo apt-get update; sudo apt-get upgrade -y",
+            "mtime": 1489705468401,
+            "title": "System [Update]"
+        },
+        {
+            "text": "Reboot",
+            "id": "7c84f142-2653-4965-9837-479d89871aca",
+            "enabled": true,
+            "commands": "sudo /sbin/reboot",
+            "mtime": 1513740898004,
+            "title": "System [Reboot]"
+        },
+        {
+            "text": "Shutdown",
+            "id": "488a17c0-11ef-4945-b325-0284bdc1b9a2",
+            "enabled": false,
+            "commands": "sudo /sbin/shutdown",
+            "mtime": 1513740905006,
+            "title": "System [Shutdown]"
+        },
+        {
+            "text": "Poweroff",
+            "id": "cac691bb-d5f2-410c-b713-a7f1f65e6ff2",
+            "enabled": true,
+            "commands": "sudo /sbin/poweroff",
+            "mtime": 1513740911544,
+            "title": "System [Poweroff]"
+        },
+        {
+            "id": "56db8b75-c52c-467e-9f74-6a87d71f090f",
+            "mtime": 1522210719739,
+            "enabled": true,
+            "title": "Cameras (Restart)",
+            "commands": "~/Videos/mjpg-streamer.sh restart"
+        },
+        {
+            "id": "e90ba061-36bb-43e5-90e8-758fdc48858e",
+            "mtime": 1513453632240,
+            "enabled": true,
+            "title": "Pendant Pi (Restart)",
+            "commands": "pm2 restart cncjs-pendant-raspi-gpio"
+        },
+        {
+            "id": "90dcbe28-93c3-4e05-81e0-4038dd06c9a8",
+            "mtime": 1513453635188,
+            "enabled": true,
+            "title": "Pendant Pi (STOP)",
+            "commands": "pm2 start cncjs-pendant-raspi-gpio"
+        },
+        {
+            "id": "1e2608fa-4626-4893-b709-b9d78e19dca7",
+            "mtime": 1489805674631,
+            "enabled": true,
+            "title": "Pendant PS3 (Disconnect)",
+            "commands": "echo -e 'disconnect 64:D4:BD:B3:9E:66\\nquit' | bluetoothctl"
+        }
+    ],
+    "macros": [
+        {
+            "id": "daab5de4-32f7-464f-ac92-8a4f59ae2f9b",
+            "mtime": 1510200021531,
+            "name": "Tool Chnage",
+            "content": "; Wait until the planner queue is empty\n%wait\n\n; Set user-defined variables\n%CLEARANCE_HEIGHT = 100\n%TOOL_CHANGE_X = -300\n%TOOL_CHANGE_Y = -300\n%TOOL_CHANGE_Z = CLEARANCE_HEIGHT\n%TOOL_PROBE_X = 0\n%TOOL_PROBE_Y = 0\n%TOOL_PROBE_Z = 20\n%PROBE_DISTANCE = 15\n%PROBE_FEEDRATE = 20\n%TOUCH_PLATE_HEIGHT = 10\n%RETRACTION_DISTANCE = 10\n\n; Keep a backup of current work position\n%X0=posx, Y0=posy, Z0=posz\n\n; Save modal state\n; * Work Coordinate System: G54, G55, G56, G57, G58, G59\n; * Plane: G17, G18, G19\n; * Units: G20, G21\n; * Distance Mode: G90, G91\n; * Feed Rate Mode: G93, G94\n; * Spindle State: M3, M4, M5\n; * Coolant State: M7, M8, M9\n%WCS = modal.wcs\n%PLANE = modal.plane\n%UNITS = modal.units\n%DISTANCE = modal.distance\n%FEEDRATE = modal.feedrate\n%SPINDLE = modal.spindle\n%COOLANT = modal.coolant\n\n; Stop spindle\nM5\n; Absolute positioning\nG90\n\n; Raise to tool change Z\nG0 Z[TOOL_CHANGE_Z]\n; Go to tool change X,Y\nG0 X[TOOL_CHANGE_X] Y[TOOL_CHANGE_Y]\n; Wait until the planner queue is empty\n%wait\n\n; Pause the program for a manual tool change\nM0\n\n; Go to tool probe X,Y\nG0 X[TOOL_PROBE_X] Y[TOOL_PROBE_Y]\n; Lower to tool probe Z\nG0 Z[TOOL_PROBE_Z]\n; Wait until the planner queue is empty\n%wait\n\n; Pause the program before probing\nM1\n\n; Probe toward workpiece with a maximum probe distance\nG91 ; Relative positioning\nG38.2 Z-[PROBE_DISTANCE] F[PROBE_FEEDRATE]\nG90 ; Absolute positioning\n\n; Set Z0 for the active work coordinate system\nG10 L20 P0 Z[TOUCH_PLATE_HEIGHT]\n\n; Retract from the touch plate\nG91 ; Relative positioning\nG0 Z[RETRACTION_DISTANCE]\nG90 ; Absolute positioning\n\n; Raise to tool change Z\nG0 Z[TOOL_CHANGE_Z]\n; Go to tool change X,Y\nG0 X[TOOL_CHANGE_X] Y[TOOL_CHANGE_Y]\n; Wait until the planner queue is empty\n%wait\n\n; Pause the program for cleanup (e.g. remove touch plate, wires, etc)\nM0\n\n; Go to previous work position\nG0 X[X0] Y[Y0]\nG0 Z[Z0]\n\n; Restore modal state\n[WCS] [PLANE] [UNITS] [DISTANCE] [FEEDRATE] [SPINDLE] [COOLANT]"
+        },
+        {
+            "id": "0be11697-17b9-41f4-8068-4308a98cf232",
+            "name": "Probe Z-Axis",
+            "content": "; Z-Axis Probe\n; http://linuxcnc.org/docs/2.6/html/gcode/gcode.html\nG91\t\t\t\t; Distance Modes\nG38.2 Z-80 F120\t; Probe Depth, Probe Feedrate. Probe toward workpiece, stop on contact, signal error if failure\nG90\t\t\t\t; set absolute mode\nG10 L20 P1 Z15\t; Touch Plate Thickness, Set Coordinate System\nG91\t\t\t\t; Distance Modes\nG0 Z2\t\t\t; Retraction Distance, rapid to position\nG90\t\t\t\t; Distance Mode",
+            "mtime": 1517683589280
+        },
+        {
+            "id": "23af5ce3-5da7-41aa-a19f-d0d120873534",
+            "mtime": 1522805797645,
+            "name": "Laser: Paper Z-Azis Height",
+            "content": "; 63.5 millimeters (2.5 in) Thick Material will cut at machine 0 / Zero\n; 0 millimeter thick material (like paper) will be cut at a depth of 63.5 mm\n\nG10 L20 P1 Z63.5\nG0 Z0"
+        }
+    ],
+    "users": [],
+    "events": [
+        {
+            "id": "6b4fc5d9-51f8-4085-ae8d-14e99d958501",
+            "mtime": 1522815709630,
+            "enabled": true,
+            "event": "gcode:start",
+            "trigger": "system",
+            "commands": "~/Videos/record-stream_usb-lihappe8_Corp_USB_2_Camera.sh start\n~/Videos/record-stream_usb-Microsoft_Microsoft_LifeCam_Studio.sh start"
+        },
+        {
+            "id": "bb987cef-d894-45d7-b70d-b2811d46ae3c",
+            "mtime": 1522815714838,
+            "enabled": true,
+            "event": "gcode:stop",
+            "trigger": "system",
+            "commands": "~/Videos/record-stream_usb-lihappe8_Corp_USB_2_Camera.sh stop\n~/Videos/record-stream_usb-Microsoft_Microsoft_LifeCam_Studio.sh stop"
+        },
+        {
+            "id": "15324516-b25f-4cd4-8a29-9258486d8199",
+            "mtime": 1513136566282,
+            "enabled": false,
+            "event": "gcode:stop",
+            "trigger": "gcode",
+            "commands": "$SLP"
+        },
+        {
+            "id": "eb2fc605-7d77-4898-aecc-393bf31c2dbe",
+            "mtime": 1512242533317,
+            "enabled": true,
+            "event": "gcode:stop",
+            "trigger": "gcode",
+            "commands": "$X ; Reset"
+        },
+        {
+            "id": "f96987b0-14de-4b8c-9b43-1f7dc9471551",
+            "mtime": 1513453504068,
+            "enabled": true,
+            "event": "gcode:start",
+            "trigger": "system",
+            "commands": "pm2 stop cncjs-pendant-raspi-gpio"
+        },
+        {
+            "id": "c5928444-50d5-4e94-909e-26816d9025cc",
+            "mtime": 1513453516195,
+            "enabled": true,
+            "event": "gcode:stop",
+            "trigger": "system",
+            "commands": "pm2 start cncjs-pendant-raspi-gpio"
+        }
+    ],
+    "mdi": [
+        {
+            "id": "b34a1f11-c125-476f-aefb-8c186dffc3eb",
+            "name": "Laser Mode [Enable]",
+            "command": "$32=1",
+            "grid": {
+                "xs": 6
+            }
+        },
+        {
+            "id": "8bc1a2e4-416e-4245-b746-06bcf09bccea",
+            "name": "Laser Offset [Set]",
+            "command": "G92.1 X0 Y0\nG0 X0 Y0\n\nG92 X-59.7 Y-56.2 ;Zero Temporary Offset for LASER\nG0 X0 Y0",
+            "grid": {
+                "xs": 6
+            }
+        },
+        {
+            "id": "7536ce1c-e888-4893-ba10-70e383f24a26",
+            "name": "Laser Mode [Disable]",
+            "command": "$32=0",
+            "grid": {
+                "xs": 6
+            }
+        },
+        {
+            "id": "befd753b-9d53-4a87-a930-2de7c7012f00",
+            "name": "Laser Offset [Unset]",
+            "command": "G0 X0 Y0\n\nG92.1 X0 Y0\nG0 X0 Y0",
+            "grid": {
+                "xs": 6
+            }
+        },
+        {
+            "id": "54c547c0-9376-42e5-b91a-1a78256dff69",
+            "name": "Z-Axis Probe",
+            "command": "; Z-Axis Probe\n; http://linuxcnc.org/docs/2.6/html/gcode/gcode.html\nG91\t\t\t\t; Distance Modes\nG38.2 Z-15 F80\t; Probe Depth, Probe Feedrate. Probe toward workpiece, stop on contact, signal error if failure\nG90\t\t\t\t; set absolute mode\nG10 L20 P1 Z15\t; Touch Plate Thickness, Set Coordinate System\nG91\t\t\t\t; Distance Modes\nG0 Z2\t\t\t; Retraction Distance, rapid to position\nG90\t\t\t\t; Distance Mode",
+            "grid": {
+                "xs": 12
+            }
+        }
+    ]
+}
