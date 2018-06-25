@@ -140,17 +140,24 @@ sudo reboot
 
 
 #################################################
+# Build the Image
 # https://beebom.com/how-clone-raspberry-pi-sd-card-windows-linux-macos/
 # https://github.com/Drewsif/PiShrink
 # https://www.raspberrypi.org/documentation/installation/installing-images/README.md
 # https://etcher.io/
 
-# Makeing Disk Backup
-sudo dd if=/dev/disk2 | pv -s 16G | dd of=~/Downloads/raspbian_min_cncjs_disk-backup.img
+## Take SD card out of PI, and connect to other computer.
 
+## Make Disk Backup
+sudo dd if=/dev/disk2 | pv -s 16G | dd of=~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.#.#_RAW.img
 
+## [Shrink Pi Image](https://github.com/Drewsif/PiShrink)
+cp ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.#.#_RAW.img ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.#.#.img
+sudo pishrink.sh ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.#.#.img
 
+## Zip
 
+## [Publish](https://github.com/cncjs/cncjs-pi-raspbian/releases)
 
 
 
