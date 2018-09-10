@@ -219,7 +219,7 @@
         "minimized": true,
         "mediaSource": "mjpeg",
         "deviceId": "",
-        "url": "http://192.168.8.60/videoany.mjpg?codectype=mjpeg&mjpeg_quant=99&mjpeg_qvalue=20&mjpeg_maxframe=3",
+        "url": "http://192.168.3.60/videoany.mjpg?codectype=mjpeg&mjpeg_quant=99&mjpeg_qvalue=20&mjpeg_maxframe=3",
         "geometry": {
           "scale": 1,
           "rotation": 0,
