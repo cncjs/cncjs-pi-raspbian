@@ -310,7 +310,7 @@ pishrink "cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
 
 5. Zip it...
 ```
-zip -9 "cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.zip" "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
+zip -9 --junk-paths "cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.zip" "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
 ```
 
 6. [Publish](https://github.com/cncjs/cncjs-pi-raspbian/releases)
