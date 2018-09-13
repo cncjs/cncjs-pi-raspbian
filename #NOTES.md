@@ -274,7 +274,61 @@ EOF
 
 ---------------
 
-# Build the Image
+
+# Build the Image (Using Docker)
+ - https://beebom.com/how-clone-raspberry-pi-sd-card-windows-linux-macos/
+ - https://github.com/Drewsif/PiShrink
+ - https://www.raspberrypi.org/documentation/installation/installing-images/README.md
+ - https://etcher.io/
+
+1. Take SD card out of PI, and connect to other computer.
+2. Set Image Version verable.
+
+`image_version='1.0.1'`
+
+3. Make Disk Backup
+
+```
+cd ~/Downloads/
+sudo dd if=/dev/sdu | pv -s 16G | dd of=$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}_RAW.img
+```
+
+4. [Shrink Pi Image](https://github.com/Drewsif/PiShrink)
+
+```
+# Set Working Directory
+cd ~/Downloads/
+
+# Make Backup${image_version}
+###cp "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}_RAW.img" "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
+pv "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}_RAW.img" > "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
+
+# Use Docker Container to Run pishrink.sh
+alias pishrink='docker run --privileged --rm -u root:$(id -g) -v "$(pwd):/workdir" turee/pishrink-docker pishrink'
+pishrink "cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
+```
+
+5. Zip it...
+```
+zip -9 "cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.zip" "$(pwd)/cncjs-app-1.9.15-raspbian-sketch-light_${image_version}.img"
+```
+
+6. [Publish](https://github.com/cncjs/cncjs-pi-raspbian/releases)
+
+Also of note
+```
+# https://serverfault.com/questions/806812/docker-run-bash-script-then-remove-container
+
+cd ~/Downloads/
+cat << EOF > script.sh
+echo 'Hello, world'
+EOF
+
+docker run --rm -u $(id -u):$(id -g) -v "$(pwd)/script.sh:/script.sh" alpine sh script.sh
+```
+
+
+# Build the Image (Using macOS)
  - https://beebom.com/how-clone-raspberry-pi-sd-card-windows-linux-macos/
  - https://github.com/Drewsif/PiShrink
  - https://www.raspberrypi.org/documentation/installation/installing-images/README.md
@@ -290,15 +344,3 @@ sudo pishrink.sh ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.x.x.img
 ```
 4. Zip it...
 5. [Publish](https://github.com/cncjs/cncjs-pi-raspbian/releases)
-
-
-
-
-cp /Users/austin/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.x.x_RAW.img ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.x.x.img
-sudo pishrink.sh ~/Downloads/cncjs-app-1.9.15-raspbian-sketch-light_1.0.1.img
-
-
-v1.0.1 
-
-
-
