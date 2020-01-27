@@ -27,7 +27,7 @@ sudo apt-get dist-upgrade -y
 ```
 
 ### Install Build Essentials & GIT
-`sudo apt-get install -y build-essential git htop iotop nmon lsof screen`
+`sudo apt-get install -y build-essential git htop iotop nmon lsof screen bc`
 
 ### Reboot
 `sudo reboot`
@@ -41,16 +41,25 @@ sudo apt-get dist-upgrade -y
 ###sudo apt-get purge -y npm nodejs
 ###sudo apt-get autoremove -y
 
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -  # Install NodeJS v10
-sudo apt-get install -y nodejs ## npm  ## npm nodejs-legacy #(Installed with nodesource)
+# Install NodeJS v10 (Old Method)
+##curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -  # Install NodeJS v10
+##sudo apt-get install -y nodejs ## npm  ## npm nodejs-legacy #(Installed with nodesource)
+
+# Install NodeJS (New Method)
+sudo apt update
+sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates
+curl -sL https://deb.nodesource.com/setup_10.x | sudo bash
+
+sudo apt update
+sudo apt -y install gcc g++ make build-essential
+sudo apt -y install nodejs
 ```
 
-#### Optional: install build tools
-To compile and install native addons from npm you may also need to install build tools:
-`sudo apt-get install -y build-essential`
-
 ### Update Node Package Manager (NPM)
-`sudo npm install npm@latest -g`
+```
+sudo apt -y install npm
+sudo npm install npm@latest -g
+```
 
 #### Get Version info
 ```
@@ -69,7 +78,7 @@ echo "[NODE] ============"; which node; node -v
 ```
 pm2 startup  # To start PM2 as pi / current user
   #[PM2] You have to run this command as root. Execute the following command:
-  sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u pi --hp /home/pi
+  sudo env PATH=$PATH:/usr/bin /usr/local/lib/node_modules/pm2/bin/pm2 startup systemd -u pi --hp /home/pi
 ```
 
 ## Software Setup
