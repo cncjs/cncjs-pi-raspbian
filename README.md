@@ -15,6 +15,6 @@ Download & Install [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspb
 
 - ##### Method 2: Download, then run installer.
 ```
-wget -O basic-install.sh https://install.pi-hole.net
+wget -O basic-install.sh https://raw.githubusercontent.com/cncjs/cncjs-pi-raspbian/master/cncjs_install.sh
 sudo bash basic-install.sh
 ```
