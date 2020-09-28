@@ -9,7 +9,7 @@
 # License: MIT License
 # Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
-# Version: 1.0.2
+# Version: 1.0.3
 # Date: 2020 / 09 / 27
 # Author: Austin St. Aubin
 # 
@@ -181,14 +181,14 @@ checklist_message='asd'
 
 declare -A checklist_options=(\
 	[Skip OS Check]="Skip checking if this script is known to be compatable with this OS.","NO" \
-	[Update System]="Update System to latest Pacakages","YES" \
-	[Remove Old NodeJS or NPM Packages]="Remove NodeJS or NPM Packages that might have been install incorrectly","NO" \
-	[Install/Update Node.js & NPM via Package Manager]="as","YES" \
-	[Install CNCjs with NPM]="Install CNCjs","YES" \
-	[Install CNCjs Pendants & Widgets]="","YES" \
-	[Setup IPtables]="Allows to access web ui from 80 to make web access easier","YES" \
-	[Autostart & Managment Task w/ Crontab]="Setup autostart so CNCjs starts when Raspberry Pi boots","YES" \
-	[Start CNCjs after Install]="","YES" \
+	[Update System]="Update System Pacakages.","YES" \
+	[Remove Old NodeJS or NPM Packages]="(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly.","NO" \
+	[Install/Update Node.js & NPM via Package Manager]="Install the required NodeJS Framework and Dependacies.","YES" \
+	[Install CNCjs with NPM]="Install CNCjs unsing Node Package Manager.","YES" \
+	[Install CNCjs Pendants & Widgets]="(Optional) Install CNCjs Extentions.","YES" \
+	[Setup IPtables]="(Optional) Allows to access web ui from 80 to make web access easier","YES" \
+	[Autostart & Managment Task w/ Crontab]="Setup autostart so CNCjs starts when Raspberry Pi boots.","YES" \
+	[Start CNCjs after Install]="(Optional) Test CNCjs Install after script finishes.","YES" \
   )
 	
 checklist_entry_options=()
