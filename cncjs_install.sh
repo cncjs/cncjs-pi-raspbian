@@ -9,7 +9,7 @@
 # License: MIT License
 # Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
-# Version: 1.0.3
+# Version: 1.0.4
 # Date: 2020 / 09 / 27
 # Author: Austin St. Aubin
 # 
@@ -177,7 +177,7 @@ whiptail --msgbox --title "Introduction" "$message" 20 76
 # Menu Checklist CNCjs Pendants & Widgets
 checklist_title="CNCjs Install Options"
 
-checklist_message='asd'
+checklist_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
 
 declare -A checklist_options=(\
 	[Skip OS Check]="Skip checking if this script is known to be compatable with this OS.","NO" \
@@ -203,7 +203,7 @@ for entry in "${!checklist_options[@]}"; do
 done
 
 # Present Checklist
-checklist_selected_descriptions=$(whiptail --checklist --separate-output --title "${checklist_title}" "$checklist_message" 30 140 $checklist_entries_count -- "${checklist_entry_options[@]}" 3>&1 1>&2 2>&3)
+checklist_selected_descriptions=$(whiptail --checklist --separate-output --title "${checklist_title}" "$checklist_message" 20 150 $checklist_entries_count -- "${checklist_entry_options[@]}" 3>&1 1>&2 2>&3)
 
 mapfile -t checklist_selected_names <<< "$checklist_selected_descriptions"
 
