@@ -1,5 +1,3 @@
-# cncjs-pi-raspbian
-
 Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS
 
 This install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the [CNCjs Introduction](https://github.com/cncjs/cncjs/wiki/Introduction) section of the wiki page.
