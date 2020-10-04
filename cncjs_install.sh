@@ -4,13 +4,13 @@
 #  - https://cnc.js.org
 #  - https://github.com/cncjs
 # 
-#  curl -sSL https://install.pi-hole.net | bash
+#  curl -sSL https://raw.githubusercontent.com/cncjs/cncjs-pi-raspbian/master/cncjs_install.sh | bash
 # 
 # License: MIT License
 # Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
-# Version: 1.0.5
-# Date: 2020 / 09 / 27
+# Version: 1.0.6
+# Date: 2020 / 10 / 03
 # Author: Austin St. Aubin
 # 
 # Notes:
@@ -175,11 +175,11 @@ whiptail --msgbox --title "Introduction" "$message" 20 76
 # https://www.shell-tips.com/bash/arrays/
 
 # Menu Checklist CNCjs Pendants & Widgets
-checklist_title="CNCjs Install Options"
+whiptail_title="CNCjs Install Options"
 
-checklist_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
+whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
 
-declare -A checklist_options=(\
+declare -A whiptail_list_options=(\
 	[Skip OS Check]="Skip checking if this script is known to be compatable with this OS.","NO" \
 	[Update System]="Update System Pacakages.","YES" \
 	[Remove Old NodeJS or NPM Packages]="(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly.","NO" \
@@ -191,77 +191,77 @@ declare -A checklist_options=(\
 	[Start CNCjs after Install]="(Optional) Test CNCjs Install after script finishes.","YES" \
   )
 	
-checklist_entry_options=()
-checklist_entries_count=${#checklist_options[@]}
-checklist_selected_names=()
+whiptail_list_entry_options=()
+whiptail_list_entry_count=${#whiptail_list_options[@]}
 
-for entry in "${!checklist_options[@]}"; do
-	# echo "TESTING: checklist_options[$entry]}:${checklist_options[$entry]} | entry:$entry | ### $(echo ${checklist_options[$entry]} | cut -d',' -f2)"
-	checklist_entry_options+=("$entry")
-	checklist_entry_options+=("$(echo ${checklist_options[$entry]} | cut -d',' -f1)  ")
-	checklist_entry_options+=($(echo ${checklist_options[$entry]} | cut -d',' -f2))
+for entry in "${!whiptail_list_options[@]}"; do
+	# echo "TESTING: whiptail_list_options[$entry]}:${whiptail_list_options[$entry]} | entry:$entry | ### $(echo ${whiptail_list_options[$entry]} | cut -d',' -f2)"
+	whiptail_list_entry_options+=("$entry")
+	whiptail_list_entry_options+=("$(echo ${whiptail_list_options[$entry]} | cut -d',' -f1)  ")
+	whiptail_list_entry_options+=($(echo ${whiptail_list_options[$entry]} | cut -d',' -f2))
 done
 
 # Present Checklist
-checklist_selected_descriptions=$(whiptail --checklist --separate-output --title "${checklist_title}" "$checklist_message" 20 150 $checklist_entries_count -- "${checklist_entry_options[@]}" 3>&1 1>&2 2>&3)
+whiptail_list_selected_descriptions=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 
-mapfile -t checklist_selected_names <<< "$checklist_selected_descriptions"
+main_list_entry_selected=()
+mapfile -t main_list_entry_selected <<< "$whiptail_list_selected_descriptions"
 
-# for checklist_selected_name in "${checklist_selected_names[@]}"; do
+# for checklist_selected_name in "${main_list_entry_selected[@]}"; do
 # 	echo "Selected Name: ${checklist_selected_name}"
 # done
 
 # echo " - - - - - - - - "
-# echo ${checklist_selected_names[*]}
-# echo ${!checklist_selected_names[*]}
-# echo ${#checklist_selected_names[*]}
-# echo ${checklist_selected_names[@]}
-# echo ${!checklist_selected_names[@]}
-# echo ${#checklist_selected_names[@]}
+# echo ${main_list_entry_selected[*]}
+# echo ${!main_list_entry_selected[*]}
+# echo ${#main_list_entry_selected[*]}
+# echo ${main_list_entry_selected[@]}
+# echo ${!main_list_entry_selected[@]}
+# echo ${#main_list_entry_selected[@]}
 # echo " - - - - - - - - "
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Menu [ CNCjs Addons Check List ]  selection of CNCjs Addons / Extentions / Pendants & Widgets
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Install CNCjs Pendants & Widgets' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Install CNCjs Pendants & Widgets' ]]; then
 	# Menu Checklist CNCjs Pendants & Widgets
-	checklist_title="CNCjs Pendants & Widgets"
+	whiptail_title="CNCjs Pendants & Widgets"
 	
-	checklist_message='CNCjs Pendants and Widgets entend the funtionality of the platform.\n\nThe user interface is organized as a collection of "widgets", each of which manages a specific aspect of machine control. For example, there are widgets for things like toolpath display, jogging, position reporting, spindle control, and many other functions. Users can control which widgets appear on the screen, omitting ones that do not apply to their machine. There is a way to add custom widgets to support new features. \nExample boilerplate pendant can be found at: https://github.com/cncjs/cncjs-pendant-boilerplate\n\nFinally, there is a collection of "pendants" - specialized user interfaces optimized for simplified control panels such as small LCD screens, wireless keyboards, button panels, and the like. Pendants interact with the cncjs server using subsets of the full set of functions that the main user interface uses.\nExample boilerplate pendant can be found at: https://github.com/cncjs/cncjs-pendant-boilerplate\n\nPlease select the Pendants and Widgets you would like to install:'
+	whiptail_message='CNCjs Pendants and Widgets entend the funtionality of the platform.\n\nThe user interface is organized as a collection of "widgets", each of which manages a specific aspect of machine control. For example, there are widgets for things like toolpath display, jogging, position reporting, spindle control, and many other functions. Users can control which widgets appear on the screen, omitting ones that do not apply to their machine. There is a way to add custom widgets to support new features. \nExample boilerplate pendant can be found at: https://github.com/cncjs/cncjs-pendant-boilerplate\n\nFinally, there is a collection of "pendants" - specialized user interfaces optimized for simplified control panels such as small LCD screens, wireless keyboards, button panels, and the like. Pendants interact with the cncjs server using subsets of the full set of functions that the main user interface uses.\nExample boilerplate pendant can be found at: https://github.com/cncjs/cncjs-pendant-boilerplate\n\nPlease select the Pendants and Widgets you would like to install:'
 	
-	declare -A checklist_options=(\
-		[Pendant TinyWeb]="https://github.com/cncjs/cncjs-pendant-boilerplate","YES" \
-		[Pendant Shopfloor Tablet]="https://github.com/cncjs/cncjs-shopfloor-tablet","NO" \
-		[Widget Boilerplate]="https://github.com/cncjs/cncjs-widget-boilerplate","YES" \
+	declare -A whiptail_list_options=(\
+		[Pendant TinyWeb]="https://github.com/cncjs/cncjs-pendant-tinyweb","NO" \
+		[Pendant Shopfloor Tablet]="https://github.com/cncjs/cncjs-shopfloor-tablet","YES" \
+		[Widget Boilerplate]="https://github.com/cncjs/cncjs-widget-boilerplate","NO" \
 	  )
 	
-	checklist_entry_options=()
-	checklist_entries_count=${#checklist_options[@]}
-	checklist_addons_selected_names=()
+	whiptail_list_entry_options=()
+	whiptail_list_entry_count=${#whiptail_list_options[@]}
 	
-	for entry in "${!checklist_options[@]}"; do
-		# echo "TESTING: checklist_options[$entry]}:${checklist_options[$entry]} | entry:$entry | ### $(echo ${checklist_options[$entry]} | cut -d',' -f2)"
-		checklist_entry_options+=("$entry")
-		checklist_entry_options+=("$(echo ${checklist_options[$entry]} | cut -d',' -f1)  ")
-		checklist_entry_options+=($(echo ${checklist_options[$entry]} | cut -d',' -f2))
+	for entry in "${!whiptail_list_options[@]}"; do
+		# echo "TESTING: whiptail_list_options[$entry]}:${whiptail_list_options[$entry]} | entry:$entry | ### $(echo ${whiptail_list_options[$entry]} | cut -d',' -f2)"
+		whiptail_list_entry_options+=("$entry")
+		whiptail_list_entry_options+=("$(echo ${whiptail_list_options[$entry]} | cut -d',' -f1)  ")
+		whiptail_list_entry_options+=($(echo ${whiptail_list_options[$entry]} | cut -d',' -f2))
 	done
 	
 	# Present Checklist
-	checklist_selected_descriptions=$(whiptail --checklist --separate-output --title "${checklist_title}" "$checklist_message" 30 90 $checklist_entries_count -- "${checklist_entry_options[@]}" 3>&1 1>&2 2>&3)
+	whiptail_list_selected_descriptions=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 30 90 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
-	mapfile -t checklist_addons_selected_names <<< "$checklist_selected_descriptions"
+	addons_list_entry_selected=()
+	mapfile -t addons_list_entry_selected <<< "$whiptail_list_selected_descriptions"
 	
-	# for checklist_selected_name in "${checklist_addons_selected_names[@]}"; do
+	# for checklist_selected_name in "${addons_list_entry_selected[@]}"; do
 	# 	echo "Selected Name: ${checklist_selected_name}"
 	# done
 	
 	# echo " - - - - - - - - "
-	# echo ${checklist_addons_selected_names[*]}
-	# echo ${!checklist_addons_selected_names[*]}
-	# echo ${#checklist_addons_selected_names[*]}
-	# echo ${checklist_addons_selected_names[@]}
-	# echo ${!checklist_addons_selected_names[@]}
-	# echo ${#checklist_addons_selected_names[@]}
+	# echo ${addons_list_entry_selected[*]}
+	# echo ${!addons_list_entry_selected[*]}
+	# echo ${#addons_list_entry_selected[*]}
+	# echo ${addons_list_entry_selected[@]}
+	# echo ${!addons_list_entry_selected[@]}
+	# echo ${#addons_list_entry_selected[@]}
 	# echo " - - - - - - - - "
 fi
 
@@ -271,7 +271,7 @@ fi
 detected_os_id=$(cat /etc/*release | grep '^ID=' | cut -d '=' -f2- | tr -d '"')
 detected_os_id_version=$(cat /etc/*release | grep '^VERSION_ID=' | cut -d '=' -f2- | tr -d '"')
 
-if [[ $SKIP_OS_CHECK != true ]] && [[ ! ${checklist_selected_names[*]} =~ 'Skip OS Check' ]] ; then
+if [[ $SKIP_OS_CHECK != true ]] && [[ ! ${main_list_entry_selected[*]} =~ 'Skip OS Check' ]] ; then
     if [[ "$detected_os_id" == "$COMPATIBLE_OS_ID" ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
         msg p "Detected OS is compatable with this install script. [ $detected_os_id | $detected_os_id_version ]"
     else
@@ -287,7 +287,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Update System ]  update operating system packages
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Update System' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Update System' ]]; then
 	msg % "Update System Packages" 'sudo apt-get update -qq'
 	msg % "Upgrade System Packages" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
 	msg % "Upgrade System Distribution" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
@@ -297,17 +297,17 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup Node.js & NPM ]  via Package Manager
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Remove Old NodeJS or NPM Packages' ]] || [[ ${checklist_selected_names[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Remove Old NodeJS or NPM Packages' ]] || [[ ${main_list_entry_selected[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
 	msg h "Setup Node.js & NPM via Package Manager"
 	
 	# Remove Old NodeJS or NPM Packages (Optional)
-	if [[ ${checklist_selected_names[*]} =~ 'Remove Old NodeJS or NPM Packages' ]]; then
+	if [[ ${main_list_entry_selected[*]} =~ 'Remove Old NodeJS or NPM Packages' ]]; then
 		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs'
 		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y'
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
-	if [[ ${checklist_selected_names[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
+	if [[ ${main_list_entry_selected[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
 		msg % "Install Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
 		msg % "Install Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
@@ -325,22 +325,72 @@ msg i "NPM: \tv$(npm -v) \t|\t $(which npm)"
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Install CNCjs ]  w/ NPM
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Install CNCjs with NPM' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Install CNCjs with NPM' ]]; then
 	msg h "Install CNCjs"
-	msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
+	
+	# Get Installed Version of CNCjs
+	if [[ $(command -v cncjs) ]]; then
+		CNCJS_VERSION_INSTALLED=$(cncjs -V)  # $(npm view cncjs version)
+	else
+	    CNCJS_VERSION_INSTALLED=0
+	fi
+	
+	# Menu Checklist CNCjs Pendants & Widgets
+	whiptail_title="CNCjs Version Selection"
+	
+	whiptail_message='Select the version of CNCjs to install.\nIf not sure, leave on latest version'
+	
+	CNCJS_VERSIONS_JSON="$(npm view cncjs versions --json)"
+	# readarray -t CNCJS_VERSIONS < <(jq -r '.[]' <<<"$json")  # sudo apt-get install jq
+	readarray -t CNCJS_VERSIONS < <((grep '"'| cut -d '"' -f2) <<<"${CNCJS_VERSIONS_JSON}")  
+	declare -p CNCJS_VERSIONS  >/dev/null 2>&1
+	
+	whiptail_list_entry_options=()
+	whiptail_list_entry_count=${#whiptail_whiptail_list_entry_options[@]}
+	
+	# First Option (On)
+	whiptail_list_entry_options+=("${CNCJS_VERSIONS[${whiptail_list_entry_count} -1]}")
+	# Tag Installed Version
+	if [[ "$CNCJS_VERSION_INSTALLED" == "${CNCJS_VERSIONS[${whiptail_list_entry_count} -1]}" ]]; then
+		whiptail_list_entry_options+=("Latest Version  * Installed * ")
+	else
+		whiptail_list_entry_options+=("Latest Version ")
+	fi
+	whiptail_list_entry_options+=("ON")
+	
+	
+	# Proccess and Flip Array (so newest at top)
+	# for entry in "${!CNCJS_VERSIONS[@]}"; do
+	for entry in $(seq $((${#CNCJS_VERSIONS[@]} - 2)) -1 0); do
+		whiptail_list_entry_options+=("${CNCJS_VERSIONS[$entry]}")
+		
+		# Tag Installed Version
+		if [[ "$CNCJS_VERSION_INSTALLED" == "${CNCJS_VERSIONS[$entry]}" ]]; then
+			whiptail_list_entry_options+=("* Installed * ")
+		else
+			whiptail_list_entry_options+=(" ")
+		fi
+		
+		whiptail_list_entry_options+=("OFF")
+	done
+	
+	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+	
+# 	msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
+	msg % "Install CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm >/dev/null 2>&1"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Download & Install CNCjs Pendants & Widgets ]  get some of the CNCjs extentions
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ -n ${checklist_addons_selected_names} ]]; then 
+if [[ -n ${addons_list_entry_selected} ]]; then 
 	msg h "Download & Install CNCjs Pendants & Widgets\t[ ${CNCJS_EXT_DIR} ]"
 fi 
 
 msg % "Create CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" "mkdir -p ${CNCJS_EXT_DIR}/watch"
 
-if [[ -n ${checklist_addons_selected_names} ]]; then 	
-	if [[ ${checklist_addons_selected_names[*]} =~ 'Pendant TinyWeb' ]]; then
+if [[ -n ${addons_list_entry_selected} ]]; then 	
+	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant TinyWeb' ]]; then
 		name="Pendant TinyWeb"
 		url="https://codeload.github.com/cncjs/cncjs-pendant-tinyweb"
 		dir="${CNCJS_EXT_DIR}/pendant-tinyweb"
@@ -350,7 +400,7 @@ if [[ -n ${checklist_addons_selected_names} ]]; then
 		msg % "Download & Install: $name\t\t( http://${HOST_IP}/${sub} )\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1 >/dev/null 2>&1"
 	fi
 	
-	if [[ ${checklist_addons_selected_names[*]} =~ 'Pendant Shopfloor Tablet' ]]; then
+	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant Shopfloor Tablet' ]]; then
 		name="Pendant Shopfloor Tablet"
 		url="https://codeload.github.com/cncjs/cncjs-shopfloor-tablet"
 		dir="${CNCJS_EXT_DIR}/pendant-shopfloor-tablet"
@@ -360,7 +410,7 @@ if [[ -n ${checklist_addons_selected_names} ]]; then
 		msg % "Download & Install: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1 >/dev/null 2>&1"
 	fi
 	
-	if [[ ${checklist_addons_selected_names[*]} =~ 'Widget Boilerplate' ]]; then
+	if [[ ${addons_list_entry_selected[*]} =~ 'Widget Boilerplate' ]]; then
 		name="Widget Boilerplate"
 		url="https://cncjs.github.io/cncjs-widget-boilerplate/v2/"
 		sub="widget-boilerplate"
@@ -372,7 +422,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Setup IPtables' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Setup IPtables' ]]; then
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" 'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
 	# Make Iptables Persistent
@@ -393,7 +443,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Autostart & Managment Task w/ Crontab ]  start CNCjs on bootup
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Autostart & Managment Task w/ Crontab' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Autostart & Managment Task w/ Crontab' ]]; then
 	# https://github.com/cncjs/cncjs/wiki/Setup-Guide:-Raspberry-Pi-%7C-Install-Node.js-via-Package-Manager-*(Recommended)*
 	msg h "Autostart & Managment Task w/ Crontab"
 	msg % "Setup & Configure CNCjs Autostart" "((crontab -l || true) | grep -v cncjs; echo \"@reboot $(which cncjs) ${cncjs_flags} >> $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
@@ -406,7 +456,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Start CNCjs ]  start CNCjs for testing / validating
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${checklist_selected_names[*]} =~ 'Start CNCjs after Install' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'Start CNCjs after Install' ]]; then
 	msg h "Starting CNCjs"
 	msg i "Starting CNCjs"
 	msg ! " └ To Stop Press (CTRL + C)"
