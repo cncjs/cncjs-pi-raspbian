@@ -13,10 +13,10 @@
 # Notes:
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.8
+SCRIPT_VERSION=1.0.9
 SCRIPT_DATE=$(date -d '2020/10/04')
 SCRIPT_AUTHOR="Austin St. Aubin"
-# =============================================================================
+# ===========================================================================
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- [ Error / Exception Handling ]
@@ -34,7 +34,7 @@ cd ~/
 # ----------------------------------------------------------------------------------------------------------------------------------
 HOST_IP=$(hostname -I | cut -d' ' -f1)
 CNCJS_EXT_DIR="${HOME}/.cncjs"
-cncjs_flags="--port 8000 --config "${CNCJS_EXT_DIR}/cncrc.cfg" --watch-directory "${CNCJS_EXT_DIR}/watch" --host ${HOST_IP}"
+cncjs_flags="--port 8000 --config "${CNCJS_EXT_DIR}/cncrc.cfg" --watch-directory "${CNCJS_EXT_DIR}/watch""    # --host ${HOST_IP}
 SKIP_OS_CHECK=false
 COMPATIBLE_OS_ID='raspbian'
 COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
