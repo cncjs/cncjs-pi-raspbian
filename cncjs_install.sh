@@ -9,7 +9,7 @@
 # License: MIT License
 # Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
-# Version: 1.0.4
+# Version: 1.0.5
 # Date: 2020 / 09 / 27
 # Author: Austin St. Aubin
 # 
@@ -289,8 +289,8 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${checklist_selected_names[*]} =~ 'Update System' ]]; then
 	msg % "Update System Packages" 'sudo apt-get update -qq'
-	msg % "Upgrade System Packages" 'sudo apt-get upgrade -qq -y'
-	msg % "Upgrade System Distribution" 'sudo apt-get dist-upgrade -qq -y'
+	msg % "Upgrade System Packages" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
+	msg % "Upgrade System Distribution" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
 	msg % "Fix Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
 fi
 
@@ -309,7 +309,7 @@ if [[ ${checklist_selected_names[*]} =~ 'Remove Old NodeJS or NPM Packages' ]] |
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${checklist_selected_names[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
-		msg % "Install Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - > /dev/null 2>&1'
+		msg % "Install Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
 		msg % "Install Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
 		msg % "Install Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
 		msg % "Install Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest >/dev/null 2>&1'
