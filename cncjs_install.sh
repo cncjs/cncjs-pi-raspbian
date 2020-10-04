@@ -9,8 +9,8 @@
 # License: MIT License
 # Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
-# Version: 1.0.6
-# Date: 2020 / 10 / 03
+# Version: 1.0.7
+# Date: 2020 / 10 / 04
 # Author: Austin St. Aubin
 # 
 # Notes:
@@ -288,10 +288,10 @@ fi
 # -- Main [ Update System ]  update operating system packages
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'Update System' ]]; then
-	msg % "Update System Packages" 'sudo apt-get update -qq'
-	msg % "Upgrade System Packages" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
-	msg % "Upgrade System Distribution" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
-	msg % "Fix Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
+	msg % "Updating System Packages" 'sudo apt-get update -qq'
+	msg % "Upgrading System Packages" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
+	msg % "Upgrading System Distribution" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
+	msg % "Fixing Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -309,10 +309,10 @@ if [[ ${main_list_entry_selected[*]} =~ 'Remove Old NodeJS or NPM Packages' ]] |
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${main_list_entry_selected[*]} =~ 'Install/Update Node.js & NPM via Package Manager' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
-		msg % "Install Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
-		msg % "Install Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
-		msg % "Install Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
-		msg % "Install Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest >/dev/null 2>&1'
+		msg % "Installing Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
+		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
+		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
+		msg % "Installing Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest >/dev/null 2>&1'
 	fi
 fi
 
@@ -377,7 +377,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'Install CNCjs with NPM' ]]; then
 	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
 # 	msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
-	msg % "Install CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm >/dev/null 2>&1"
+	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm >/dev/null 2>&1"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -387,7 +387,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 	msg h "Download & Install CNCjs Pendants & Widgets\t[ ${CNCJS_EXT_DIR} ]"
 fi 
 
-msg % "Create CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" "mkdir -p ${CNCJS_EXT_DIR}/watch"
+msg % "Creating CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" "mkdir -p ${CNCJS_EXT_DIR}/watch"
 
 if [[ -n ${addons_list_entry_selected} ]]; then 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant TinyWeb' ]]; then
@@ -426,7 +426,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'Setup IPtables' ]]; then
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" 'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
 	# Make Iptables Persistent
-	msg % "Make Iptables Persistent, select yes if prompted" 'sudo apt-get install iptables-persistent -qq -y -f'
+	msg % "Making Iptables Persistent, select yes if prompted" 'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
 	#sudo netfilter-persistent save
