@@ -4,17 +4,18 @@
 #  - https://cnc.js.org
 #  - https://github.com/cncjs
 # 
-#  curl -sSL https://raw.githubusercontent.com/cncjs/cncjs-pi-raspbian/master/cncjs_install.sh | bash
+# How-to Use:
+#   curl -sSL https://raw.githubusercontent.com/cncjs/cncjs-pi-raspbian/master/cncjs_install.sh | bash
 # 
 # License: MIT License
-# Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
-# 
-# Version: 1.0.7
-# Date: 2020 / 10 / 04
-# Author: Austin St. Aubin
+#   Copyright (c) 2018-2020 CNCjs (https://github.com/cncjs)
 # 
 # Notes:
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+SCRIPT_VERSION=1.0.8
+SCRIPT_DATE=$(date -d '2020/10/04')
+SCRIPT_AUTHOR="Austin St. Aubin"
 # =============================================================================
 
 # ----------------------------------------------------------------------------------------------------------------------------------
