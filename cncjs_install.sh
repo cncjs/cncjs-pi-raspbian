@@ -14,7 +14,7 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.11
+SCRIPT_VERSION=1.0.12
 SCRIPT_DATE=$(date -d '2020/10/07')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
@@ -372,8 +372,8 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A01' ]]; then
 	msg % "Updating System Packages" 'sudo apt-get update -qq'
-	msg % "Upgrading System Packages" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
-	msg % "Upgrading System Distribution" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
+	msg % "Upgrading System Packages ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
+	msg % "Upgrading System Distribution ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
 	msg % "Fixing Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
 fi
 
@@ -544,7 +544,35 @@ if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup Web Kiosk"
 	
 	# =============================================
-	if [[ ${COMPATIBLE_OS_GUI} == false ]] || [[ -x $(which openbox) ]]; then
+	if [[ -x $(which lightdm) ]]; then
+		# Output LXDE Setup w/ Directory Path
+		msg i "Configuring LXDE to start Web Kiosk on Startup"
+		mkdir -p "${HOME}/.config/lxsession/LXDE-pi"
+		# --------------------------------------------
+cat > "${HOME}/.config/lxsession/LXDE-pi/autostart" << EOF
+@lxpanel --profile LXDE-pi
+@pcmanfm --desktop --profile LXDE-pi
+${CNCJS_EXT_DIR}/cncjs-kiosk.sh
+EOF
+		# --------------------------------------------
+		
+		# Setup Autologin (GUI) on Raspberry Pi
+		msg i "Enabling Autologin (GUI)"
+		if [ -e /etc/init.d/lightdm ]; then
+			sudo systemctl set-default graphical.target
+			sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+sudo sh -c "cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
+EOF"
+			sudo sed /etc/lightdm/lightdm.conf -i -e "s/^\(#\|\)autologin-user=.*/autologin-user=$USER/"
+		else
+			whiptail --msgbox "lightdm auto login setup error" 20 60 2
+			return 1
+		fi
+	# =============================================
+	elif [[ ${COMPATIBLE_OS_GUI} == false ]] || [[ -x $(which openbox) ]]; then
 		msg i "Raspberry PI GUI (lxde) NOT Detected. Raspberry Pi OS (Slim)?"
 		
 		# Minimum Environment for GUI Applications | bare minimum needed for X server & window manager
@@ -591,37 +619,9 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
 EOF"
 		# --------------------------------------------
-	
-	# =============================================
-elif [[ -x $(which lightdm) ]]; then
-		# Output LXDE Setup w/ Directory Path
-		msg i "Configuring LXDE to start Web Kiosk on Startup"
-		mkdir -p "${HOME}/.config/lxsession/LXDE-pi"
-		# --------------------------------------------
-cat > "${HOME}/.config/lxsession/LXDE-pi/autostart" << EOF
-@lxpanel --profile LXDE-pi
-@pcmanfm --desktop --profile LXDE-pi
-${CNCJS_EXT_DIR}/cncjs-kiosk.sh
-EOF
-		# --------------------------------------------
-		
-		# Setup Autologin (GUI) on Raspberry Pi
-		msg i "Enabling Autologin (GUI)"
-		if [ -e /etc/init.d/lightdm ]; then
-			sudo systemctl set-default graphical.target
-			sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
-sudo sh -c "cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
-EOF"
-			sudo sed /etc/lightdm/lightdm.conf -i -e "s/^\(#\|\)autologin-user=.*/autologin-user=$USER/"
-		else
-			whiptail --msgbox "lightdm auto login setup error" 20 60 2
-			return 1
-		fi
 	fi
 	# =============================================
+	
 	
 	# Load Setting if File Exists
 	if [[ -f "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" ]]; then
@@ -630,8 +630,8 @@ EOF"
 		KIOSK_URL=http://localhost:8000
 	fi
 
-	# Output Chrome Kiosk Script
-	# --------------------------------------------
+# Output Chrome Kiosk Script
+# --------------------------------------------
 cat > "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" << 'EOF'
 #!/bin/bash
 
