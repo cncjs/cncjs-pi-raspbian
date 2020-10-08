@@ -14,7 +14,7 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.10
+SCRIPT_VERSION=1.0.11
 SCRIPT_DATE=$(date -d '2020/10/07')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
@@ -271,15 +271,15 @@ whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\
 # whiptail_list_entry_options=()	
 declare whiptail_list_entry_options=(\
 	"A00 System Check" "Preform system check to insure this script is known to be compatable with this OS." "YES" \
-	"A01 System Update" "Update System Pacakages." "NO" \
+	"A01 System Update" "Update System Pacakages." "YES" \
 	"A02 Remove Old NodeJS & NPM Packages" "(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly." "NO" \
-	"A03 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "NO" \
-	"A04 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "NO" \
-	"A05 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "NO" \
-	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "NO" \
-	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
-	"A08 Autostart & Managment Task w/ Crontab" "Setup autostart so CNCjs starts when Raspberry Pi boots." "NO" \
-	"A09 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "NO" \
+	"A03 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "YES" \
+	"A04 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
+	"A05 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
+	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
+	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "YES" \
+	"A08 Autostart & Managment Task w/ Crontab" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
+	"A09 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "YES" \
   )
 
 declare whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -385,16 +385,16 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 	
 	# Remove Old NodeJS or NPM Packages (Optional)
 	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
-		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs'
-		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y'
+		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs >/dev/null 2>&1'
+		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y >/dev/null 2>&1'
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
 		msg % "Installing Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
-		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
-		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
+		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y >/dev/null 2>&1'
+		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f >/dev/null 2>&1'
 		msg % "Installing Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest >/dev/null 2>&1'
 	fi
 fi
@@ -468,11 +468,11 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	
 	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
-# 	msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
+    #msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
 	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm >/dev/null 2>&1"
 	
 	# User TTY Permissions
-	https://www.raspberrypi.org/forums/viewtopic.php?t=171843
+	# https://www.raspberrypi.org/forums/viewtopic.php?t=171843
 	msg % "Set User TTY Permissions" "sudo usermod -a -G tty ${USER}"
 fi
 
