@@ -14,8 +14,8 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.12
-SCRIPT_DATE=$(date -d '2020/10/07')
+SCRIPT_VERSION=1.0.13
+SCRIPT_DATE=$(date -d '2020/10/08')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
 
@@ -33,20 +33,31 @@ cd ~/
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Varrables [ General ]  genneral global varables
 # ----------------------------------------------------------------------------------------------------------------------------------
-HOST_IP=$(hostname -I | cut -d' ' -f1)
+readonly SCRIPT_NAME=$(basename $0)
+readonly HOST_IP=$(hostname -I | cut -d' ' -f1)
+
+SYSTEM_CHECK=true  # Preform system check to insure this script is known to be compatable with this OS
+
 CNCJS_EXT_DIR="${HOME}/.cncjs"
 cncjs_flags="--port 8000 --config "${CNCJS_EXT_DIR}/cncrc.cfg" --watch-directory "${CNCJS_EXT_DIR}/watch""  # --host ${HOST_IP}
-SYSTEM_CHECK=true  # Preform system check to insure this script is known to be compatable with this OS
 COMPATIBLE_OS_ID='raspbian'
 COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
 
 # Detect Compatible GUI
 [[ $(dpkg -l|egrep -i "(lxde|openbox)" | grep -v library) ]] && COMPATIBLE_OS_GUI=true || COMPATIBLE_OS_GUI=false
 
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- [ Logging ]  log hidden output to syslog for use in debugging
+# ----------------------------------------------------------------------------------------------------------------------------------
+# https://www.urbanautomaton.com/blog/2014/09/09/redirecting-bash-script-output-to-syslog/
+# To Use/View Syslog, use command: tail -f -n 50 /var/log/syslog
+exec 4> >(logger -t $(basename $0))
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Color / Messange Handling
 COL_NC='\e[0m' # No Color
+COL_GREY='\e[2;31;37m'
 COL_BLACK='\e[1;30m'
 COL_RED='\e[1;31m'
 COL_GREEN='\e[1;32m'
@@ -100,6 +111,10 @@ function spinner() {
 # -- Function [ Message ]  message formatter, also used for passing commands.
 # ----------------------------------------------------------------------------------------------------------------------------------
 msg() {
+	# Logging to syslog
+	logger -p user.notice -t $SCRIPT_NAME "$2"
+	
+	# User Output
 	case $1 in
 		'h') # Header
 			printf "\\n %b ${2} %b\\n" "${COL_WHITE}" "${COL_NC}  "
@@ -121,7 +136,13 @@ msg() {
 			;;
 		'%') # Spinner / Command
 			# echo "[${1}] | [${2}] | [${3}] | [${4}]"
-			/bin/sh -c "${3}" & spinner $! "${2}"
+			# /bin/sh -c "${3}" & spinner $! "${2}" 
+			/bin/sh -c "${3}" >&4 2>&1 & spinner $! "${2}"
+			;;
+		'%%') # Spinner / Command (No stdout Catpture, only capture stderr)
+			# echo "[${1}] | [${2}] | [${3}] | [${4}]"
+			# /bin/sh -c "${3}" & spinner $! "${2}" 
+			/bin/sh -c "${3}" 2>&4 & spinner $! "${2}"
 			;;
 		*) # Catch-all
 			echo -e "${@}"
@@ -238,7 +259,10 @@ echo -e "
    
   CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.
   For a more complete introduction, see the Introduction section of the wiki page ( \e]8;;https://github.com/cncjs/cncjs/wiki/Introduction\ahttps://github.com/cncjs/cncjs/wiki/Introduction\e]8;;\a ).
+  ${COL_GREY}NOTE: This installer logs to syslog. You can view the syslog, with terminal command 'tail -f -n 50 /var/log/syslog'${COL_NC}
   ${COL_WHITE}==========================================================================${COL_NC}"
+  
+  echo "===== Starting CNCjs Install Script =====" >&4
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Menu [ Menu Welcome ]  welcome message
@@ -372,8 +396,8 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A01' ]]; then
 	msg % "Updating System Packages" 'sudo apt-get update -qq'
-	msg % "Upgrading System Packages ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get upgrade -qq -y >/dev/null 2>&1'
-	msg % "Upgrading System Distribution ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get dist-upgrade -qq -y >/dev/null 2>&1'
+	msg % "Upgrading System Packages ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get upgrade -qq -y'
+	msg % "Upgrading System Distribution ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get dist-upgrade -qq -y'
 	msg % "Fixing Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
 fi
 
@@ -385,17 +409,17 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 	
 	# Remove Old NodeJS or NPM Packages (Optional)
 	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
-		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs >/dev/null 2>&1'
-		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y >/dev/null 2>&1'
+		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs'
+		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y'
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
-		msg % "Installing Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - >/dev/null 2>&1'
-		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y >/dev/null 2>&1'
-		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f >/dev/null 2>&1'
-		msg % "Installing Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest >/dev/null 2>&1'
+		msg % "Installing Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
+		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
+		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
+		msg % "Installing Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest'
 	fi
 fi
 
@@ -468,8 +492,8 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	
 	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
-    #msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm >/dev/null 2>&1'
-	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm >/dev/null 2>&1"
+    #msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm'
+	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm"
 	
 	# User TTY Permissions
 	# https://www.raspberrypi.org/forums/viewtopic.php?t=171843
@@ -493,7 +517,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 		sub="tinyweb"
 		cncjs_flags+=" --mount /${sub}:${dir}/src"
 		url+="/legacy.tar.gz/latest"
-		msg % "Download & Install: $name\t\t( http://${HOST_IP}/${sub} )\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1 >/dev/null 2>&1"
+		msg % "Download & Install: $name\t\t( http://${HOST_IP}/${sub} )\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant Shopfloor Tablet' ]]; then
@@ -503,7 +527,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 		sub="tablet"
 		cncjs_flags+=" --mount /${sub}:${dir}/src"
 		url+="/legacy.tar.gz/latest"
-		msg % "Download & Install: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1 >/dev/null 2>&1"
+		msg % "Download & Install: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Widget Boilerplate' ]]; then
@@ -523,7 +547,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" 'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
 	# Make Iptables Persistent
-	msg % "Making Iptables Persistent, select yes if prompted" 'sudo apt-get install iptables-persistent -qq -y -f'
+	msg %% "Making Iptables Persistent, select yes if prompted" 'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
 	#sudo netfilter-persistent save
@@ -576,10 +600,10 @@ EOF"
 		msg i "Raspberry PI GUI (lxde) NOT Detected. Raspberry Pi OS (Slim)?"
 		
 		# Minimum Environment for GUI Applications | bare minimum needed for X server & window manager
-		msg % "Installing OpenBox GUI" "sudo apt-get install -y --no-install-recommends xserver-xorg xserver-xorg-legacy x11-xserver-utils xinit openbox zenity >/dev/null 2>&1"
+		msg % "Installing OpenBox GUI" "sudo apt-get install -y --no-install-recommends xserver-xorg xserver-xorg-legacy x11-xserver-utils xinit openbox zenity"
 		
 		# Web Browser | Chromium has a nice kiosk mode
-		msg % "Chromium Web Browser (for Kiosk Mode)" "sudo apt-get install -y --no-install-recommends chromium-browser >/dev/null 2>&1"
+		msg % "Chromium Web Browser (for Kiosk Mode)" "sudo apt-get install -y --no-install-recommends chromium-browser"
 		###sudo apt-get install -y --no-install-recommends chromium-browser rpi-chromium-mods  # (Optional)
 		
 		# Output Openbox Setup w/ Directory Path
