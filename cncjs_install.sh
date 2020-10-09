@@ -14,7 +14,7 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.14
+SCRIPT_VERSION=1.0.15
 SCRIPT_DATE=$(date -d '2020/10/08')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
@@ -399,10 +399,14 @@ fi
 # -- Main [ Update System ]  update operating system packages
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A01' ]]; then
-	msg % "Updating System Packages" 'sudo apt-get update -qq'
-	msg % "Upgrading System Packages ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get upgrade -qq -y'
-	msg % "Upgrading System Distribution ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" 'sudo apt-get dist-upgrade -qq -y'
-	msg % "Fixing Broken Packages (if any)" 'sudo apt-get update --fix-missing -qq -y'
+	msg % "Updating System Packages" \
+		'sudo apt-get update -qq'
+	msg % "Upgrading System Packages ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" \
+		'sudo apt-get upgrade -qq -y'
+	msg % "Upgrading System Distribution ${COL_YELLOW}(this can take a while, please wait)${COL_NC}" \
+		'sudo apt-get dist-upgrade -qq -y'
+	msg % "Fixing Broken Packages (if any)" \
+		'sudo apt-get update --fix-missing -qq -y'
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -413,17 +417,23 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 	
 	# Remove Old NodeJS or NPM Packages (Optional)
 	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
-		msg % "Removing any Old NodeJS or NPM Packages" 'sudo apt-get purge -y npm nodejs'
-		msg % "Removing Un-needed Packages" 'sudo apt-get autoremove -y'
+		msg % "Removing any Old NodeJS or NPM Packages" \
+			'sudo apt-get purge -y npm nodejs'
+		msg % "Removing Un-needed Packages" \
+			'sudo apt-get autoremove -y'
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
-		msg % "Installing Node.js v10.x Package Source" 'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
-		msg % "Installing Node.js v10.x via Package Manager" 'sudo apt-get install nodejs -qq -y'
-		msg % "Installing Build Essential" 'sudo apt-get install build-essential gcc g++ make -qq -y -f'
-		msg % "Installing Latest Node Package Manager (NPM)" 'sudo npm install -g npm@latest'
+		msg % "Installing Node.js v10.x Package Source" \
+			'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
+		msg % "Installing Node.js v10.x via Package Manager" \
+			'sudo apt-get install nodejs -qq -y'
+		msg % "Installing Build Essential" \
+			'sudo apt-get install build-essential gcc g++ make -qq -y -f'
+		msg % "Installing Latest Node Package Manager (NPM)" \
+			'sudo npm install -g npm@latest'
 	fi
 fi
 
@@ -497,11 +507,13 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
     #msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm'
-	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" "sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm"
+	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" \
+		"sudo npm install -g cncjs@${cncjs_version_install} --unsafe-perm"
 	
 	# User TTY Permissions
 	# https://www.raspberrypi.org/forums/viewtopic.php?t=171843
-	msg % "Set User TTY Permissions" "sudo usermod -a -G tty ${USER}"
+	msg % "Set User TTY Permissions" \
+		"sudo usermod -a -G tty ${USER}"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -511,7 +523,8 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 	msg h "Download & Install CNCjs Pendants & Widgets\t[ ${CNCJS_EXT_DIR} ]"
 fi 
 
-msg % "Creating CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" "mkdir -p ${CNCJS_EXT_DIR}/watch"
+msg % "Creating CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" \
+	"mkdir -p ${CNCJS_EXT_DIR}/watch"
 
 if [[ -n ${addons_list_entry_selected} ]]; then 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant TinyWeb' ]]; then
@@ -521,7 +534,8 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 		sub="tinyweb"
 		cncjs_flags+=" --mount /${sub}:${dir}/src"
 		url+="/legacy.tar.gz/latest"
-		msg % "Download & Install: $name\t\t( http://${HOST_IP}/${sub} )\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
+		msg % "Download & Install: $name\t\t( http://${HOST_IP}/${sub} )\t[ ${dir} ]" \
+			"mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant Shopfloor Tablet' ]]; then
@@ -531,7 +545,8 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 		sub="tablet"
 		cncjs_flags+=" --mount /${sub}:${dir}/src"
 		url+="/legacy.tar.gz/latest"
-		msg % "Download & Install: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" "mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
+		msg % "Download & Install: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" \
+			"mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Widget Boilerplate' ]]; then
@@ -548,10 +563,12 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
 	msg h "Setup IPtables"
-	msg % "Setup IPtables (allow access to port 8000 from port 80)" 'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
+	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
+		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
 	# Make Iptables Persistent
-	msg %% "Making Iptables Persistent, select yes if prompted" 'sudo apt-get install iptables-persistent -qq -y -f'
+	msg %% "Making Iptables Persistent, select yes if prompted" \
+		'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
 	#sudo netfilter-persistent save
@@ -604,10 +621,12 @@ EOF"
 		msg i "Raspberry PI GUI (lxde) NOT Detected. Raspberry Pi OS (Slim)?"
 		
 		# Minimum Environment for GUI Applications | bare minimum needed for X server & window manager
-		msg % "Installing OpenBox GUI" "sudo apt-get install -y --no-install-recommends xserver-xorg xserver-xorg-legacy x11-xserver-utils xinit openbox zenity"
+		msg % "Installing OpenBox GUI" \
+			"sudo apt-get install -y --no-install-recommends xserver-xorg xserver-xorg-legacy x11-xserver-utils xinit openbox zenity"
 		
 		# Web Browser | Chromium has a nice kiosk mode
-		msg % "Chromium Web Browser (for Kiosk Mode)" "sudo apt-get install -y --no-install-recommends chromium-browser"
+		msg % "Chromium Web Browser (for Kiosk Mode)" \
+			"sudo apt-get install -y --no-install-recommends chromium-browser"
 		###sudo apt-get install -y --no-install-recommends chromium-browser rpi-chromium-mods  # (Optional)
 		
 		# Output Openbox Setup w/ Directory Path
@@ -720,10 +739,12 @@ fi
 if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	# https://github.com/cncjs/cncjs/wiki/Setup-Guide:-Raspberry-Pi-%7C-Install-Node.js-via-Package-Manager-*(Recommended)*
 	msg h "Autostart & Managment Task w/ Crontab"
-	msg % "Setup & Configure CNCjs Autostart" "((crontab -l || true) | grep -v cncjs; echo \"@reboot $(which cncjs) ${cncjs_flags} >> $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
+	msg % "Setup & Configure CNCjs Autostart" \
+	  "((crontab -l || true) | grep -v cncjs; echo \"@reboot $(which cncjs) ${cncjs_flags} >> $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
 	# Disable Autostart
 	# crontab -l | grep -v cncjs | crontab -
-	msg % "Rotate Log Weekly (4000 lines)" "((crontab -l || true) | grep -v 'tail -n'; echo \"@weekly tail -n 4000 $HOME/.cncjs/cncjs.log > $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
+	msg % "Rotate Log Weekly (4000 lines)" \
+	  "((crontab -l || true) | grep -v 'tail -n'; echo \"@weekly tail -n 4000 $HOME/.cncjs/cncjs.log > $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
 	msg - 'Crontab Schedualed Task' "$(crontab -l)"
 fi
 
