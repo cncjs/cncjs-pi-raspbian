@@ -14,7 +14,7 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.13
+SCRIPT_VERSION=1.0.14
 SCRIPT_DATE=$(date -d '2020/10/08')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
@@ -133,6 +133,10 @@ msg() {
 			;;
 		'?') # Question
 			printf "  %b %b ${2} %b\\n" "${QSTN}" "${COL_NC}" "${COL_NC}  "
+			;;
+		'-') # User Log Output
+			line_break='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
+			echo -e "${COL_GREY}  ${2} ${line_break:${#2} + 1}\n    ${3}\n  ${line_break} ${COL_NC}"
 			;;
 		'%') # Spinner / Command
 			# echo "[${1}] | [${2}] | [${3}] | [${4}]"
@@ -720,7 +724,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	# Disable Autostart
 	# crontab -l | grep -v cncjs | crontab -
 	msg % "Rotate Log Weekly (4000 lines)" "((crontab -l || true) | grep -v 'tail -n'; echo \"@weekly tail -n 4000 $HOME/.cncjs/cncjs.log > $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
-	echo -e "${COL_BLUE}  Crontab Schedualed Task - - - - - - - - - - - - - - - -\n$(crontab -l)\n  - - - - - - - - - - - - - - - - - - - - - - - - - - - -${COL_NC}"
+	msg - 'Crontab Schedualed Task' "$(crontab -l)"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -731,6 +735,6 @@ if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 	msg i "Starting CNCjs"
 	msg ! " └ To Stop Press (CTRL + C)"
 	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
-	echo -e "${COL_BLUE}  CNCjs Start Command - - - - - - - - - - - - - - - - - -\n$(which cncjs) --verbose ${cncjs_flags}\n  - - - - - - - - - - - - - - - - - - - - - - - - - - - -${COL_NC}"
+	msg - 'CNCjs Start Command' "(which cncjs) --verbose ${cncjs_flags}"
 	$(which cncjs) --verbose ${cncjs_flags}
 fi
