@@ -14,7 +14,7 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.15
+SCRIPT_VERSION=1.0.16
 SCRIPT_DATE=$(date -d '2020/10/08')
 SCRIPT_AUTHOR="Austin St. Aubin"
 # ===========================================================================
@@ -50,6 +50,7 @@ COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
 # -- [ Logging ]  log hidden output to syslog for use in debugging
 # ----------------------------------------------------------------------------------------------------------------------------------
 # https://www.urbanautomaton.com/blog/2014/09/09/redirecting-bash-script-output-to-syslog/
+# Sends stdout output to syslog.
 # To Use/View Syslog, use command: tail -f -n 50 /var/log/syslog
 exec 4> >(logger -t $(basename $0))
 
@@ -307,7 +308,8 @@ declare whiptail_list_entry_options=(\
 	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
 	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "YES" \
 	"A08 Autostart & Managment Task w/ Crontab" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
-	"A09 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "YES" \
+	"A09 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "NO" \
+	"A10 Reboot" "(Optional) Reboot after install." "YES" \
   )
 
 declare whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -682,6 +684,9 @@ EOF"
 cat > "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" << 'EOF'
 #!/bin/bash
 
+# Set Display
+#export DISPLAY=:0
+
 # URL to open in Chrome Kiosk
 KIOSK_URL=http://localhost:8000
 
@@ -758,4 +763,13 @@ if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
 	msg - 'CNCjs Start Command' "(which cncjs) --verbose ${cncjs_flags}"
 	$(which cncjs) --verbose ${cncjs_flags}
+fi
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Main [ Reboot ]  reboot after install
+# ----------------------------------------------------------------------------------------------------------------------------------
+if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
+	msg h "Rebooting"
+	msg % "Rebooting Raspberry Pi" \
+	  "sudo reboot"
 fi
