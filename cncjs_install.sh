@@ -15,11 +15,10 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.17
-SCRIPT_DATE=$(date -I --date '2020/10/11')
+SCRIPT_VERSION=1.0.18
+SCRIPT_DATE=$(date -I --date '2020/10/15')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
-echo "${SCRIPT_TITLE_FULL}"
 # ===========================================================================
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -253,8 +252,7 @@ EOF
 # -- Output [ Header ]  welcome message
 # ----------------------------------------------------------------------------------------------------------------------------------
 # $(curl --silent "https://api.github.com/repos/cncjs/cncjs/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')  # Get CNCjs Latest Version
-echo -e "
-${SCRIPT_TITLE_FULL}
+echo -e "${COL_GREY}${SCRIPT_TITLE_FULL}${COL_NC}
      _______   ________  _
     / ____/ | / / ____/ (_)____
    / /   /  |/ / /     / / ___/
@@ -310,10 +308,11 @@ declare whiptail_list_entry_options=(\
 	"A04 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
 	"A05 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
 	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
-	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "YES" \
+	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
 	"A08 Autostart & Managment Task w/ Crontab" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
-	"A09 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "NO" \
-	"A10 Reboot" "(Optional) Reboot after install." "YES" \
+	"A09 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
+	"A10 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "NO" \
+	"A20 Reboot" "(Optional) Reboot after install." "YES" \
   )
 
 whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -753,10 +752,320 @@ if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	msg - 'Crontab Schedualed Task' "$(crontab -l)"
 fi
 
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Main [ Install MJPG-Streamer & Tools ]  w/ package manager
+# ----------------------------------------------------------------------------------------------------------------------------------
+if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
+	
+	msg h "MJPEG-Streamer Setup"
+	
+	msg % "Installing Build Tools & Dependencies" \
+		'sudo apt-get install -qq -y build-essential libjpeg8-dev imagemagick libv4l-dev cmake git'
+	msg % "Building & Installing Latest MJPEG-Streamer from GIT Repository" \
+		'cd /tmp; git clone https://github.com/jacksonliam/mjpg-streamer.git; cd mjpg-streamer/mjpg-streamer-experimental; make; sudo make install'
+	
+	# Create System Account for mjpg-streamer process
+	SERVICE_ACCOUNT=webcam
+	msg % "Creating System Account (${SERVICE_ACCOUNT}) for mjpg-streamer process" \
+		"[ ! $(getent passwd ${SERVICE_ACCOUNT}) ] && sudo useradd --system ${SERVICE_ACCOUNT} || echo 'User Already Exist'"
+	msg % "Adding System Account (${SERVICE_ACCOUNT}) to (video) group" \
+		"[ ! $(user=${SERVICE_ACCOUNT}; group=video; getent group ${group} | grep "\b${user}\b") ] && sudo adduser ${SERVICE_ACCOUNT} video || echo 'User Already Member of Group'"
+	msg %% "Granting System Account (${SERVICE_ACCOUNT}) access to video devices" \
+		"sudo usermod -a -G video ${SERVICE_ACCOUNT}"
+
+	# -----------------------------------------------------
+
+# Main Service
+msg i "Creating MJPEG-Streamer Service"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+cat << EOF | sudo tee "/lib/systemd/system/mjpg-streamer.service" >/dev/null 2>&1
+[Unit]
+Description=MJPEG-Streamer Service | A Linux-UVC streaming application with Pan/Tilt
+Documentation=https://github.com/jacksonliam/mjpg-streamer
+After=syslog.target
+After=network.target
+Wants=network.target
+
+
+[Service]
+Type=simple
+
+# Process Priority
+Nice=+10
+
+# Restart service after x seconds if node service crashes
+Restart=always
+RestartSec=5
+
+# User & Group
+User=webcam
+Group=video
+
+# Capabilities & Security Settings
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+ProtectHome=true
+ProtectSystem=full
+
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mjpg-streamer
+
+# = Option 1 = (Environment)
+# - Input Process -
+$(mjpg_streamer --input "input_uvc.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --input "input_uvc.so --help"
+Environment=INPUT_OPTIONS="input_uvc.so --device /dev/video0"
+
+# - Output Process -
+$(mjpg_streamer --output "output_http.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --output "output_http.so --help"
+Environment=OUTPUT_OPTIONS="output_http.so --port 8080 --www /usr/local/share/mjpg-streamer/www"
+
+# = Option 2 = (EnvironmentFile)
+# EnvironmentFile=-/etc/mjpg-streamer.d/default.conf
+
+# = Start Process =
+ExecStart=/usr/local/bin/mjpg_streamer --input "\${INPUT_OPTIONS}" --output "\${OUTPUT_OPTIONS}"
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# -----------------------------------------------------
+
+# Service Settings
+msg i "Creating MJPEG-Streamer Service Settings"
+# --------------------------
+sudo mkdir -p "/etc/mjpg-streamer.d/" >&4 2>&1
+cat << EOF | sudo tee "/etc/mjpg-streamer.d/default.conf" >/dev/null 2>&1
+# MJPG-Streamer Settings
+# https://github.com/jacksonliam/mjpg-streamer
+
+# - Input Process -
+$(mjpg_streamer --input "input_uvc.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --input "input_uvc.so --help"
+INPUT_OPTIONS="input_uvc.so --device /dev/video0 --resolution 640x480 --quality 80 --fps 15"
+
+# - Output Process -
+$(mjpg_streamer --output "output_http.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --output "output_http.so --help"
+OUTPUT_OPTIONS="output_http.so --port 8080 --www '/usr/local/share/mjpg-streamer/www'"
+
+EOF
+
+# -----------------------------------------------------
+
+# Create Template Service
+msg i "Creating MJPEG-Streamer Service Template"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+cat << EOF | sudo tee "/lib/systemd/system/mjpg-streamer@.service" >/dev/null 2>&1
+[Unit]
+Description="MJPEG-Streamer Service Instance: %I | Default Device: /dev/video%i | Default Port: 808%i"
+Documentation=https://github.com/jacksonliam/mjpg-streamer
+After=syslog.target
+After=network.target
+Wants=network.target
+
+
+[Service]
+Type=simple
+
+# Process Priority
+Nice=+10
+
+# Restart service after x seconds if node service crashes
+Restart=always
+RestartSec=5
+
+# User & Group
+User=webcam
+Group=video
+
+# Capabilities & Security Settings
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+ProtectHome=true
+ProtectSystem=full
+
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mjpg-streamer
+
+# = Option 1 = (Environment)
+# - Input Process -
+$(mjpg_streamer --input "input_uvc.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --input "input_uvc.so --help"
+Environment=INPUT_OPTIONS="input_uvc.so --device /dev/video%i"
+
+# - Output Process -
+$(mjpg_streamer --output "output_http.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
+# mjpg_streamer --output "output_http.so --help"
+Environment=OUTPUT_OPTIONS="output_http.so --port 808%i --www /usr/local/share/mjpg-streamer/www"
+
+# = Option 2 = (EnvironmentFile)
+# ExecStartPre=+/bin/cp --update '/etc/mjpg-streamer.d/default.conf' '/etc/mjpg-streamer.d/%i.conf'
+# EnvironmentFile=-/etc/mjpg-streamer.d/%i.conf
+
+# = Start Process =
+ExecStart=/usr/local/bin/mjpg_streamer --input "\${INPUT_OPTIONS}" --output "\${OUTPUT_OPTIONS}"
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+	# -----------------------------------------------------
+	
+	# Reload Services
+	msg % "Reloading Service Deamon" \
+		"sudo systemctl daemon-reload"
+	
+	# =====================================================
+		
+	# Menu MJPEG Streamer Setup
+	whiptail_title="MJPEG-Streamer Camera Options"
+	whiptail_message="mjpg-streamer is a command line application that copies JPEG frames from one or more input plugins to multiple output plugins. It can be used to stream JPEG files over an IP-based network from a webcam to various types of viewers such as Chrome, Firefox, Cambozola, VLC, mplayer, and other software capable of receiving MJPG streams\n\nWould you like MJPG Stream setup for any one camera you plug in. This makes using a camera very easy. Just plug any camera in and it will work.\n\nAlternatively, if you plan to plugin muluple camera's at once and want seperate streams for each camera. This script can setup seperate streams where each stream has a camera assisgend to it by device ID. This way the streams do not change on reboot.\nHowever, new cameras will require changing ID. You can do that by just reruning this script."
+	
+	whiptail_menu_entry_selected=$(whiptail --menu --backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" --nocancel --ok-button "Setup Camera(s)" --title "${whiptail_title}" "${whiptail_message}" 24 78 2 \
+		"Single Camera" "  Setup MJPEG-Streamer for a single camera on /dev/video0" \
+		"Multiple Cameras" "  Setup MJPEG-Streamer cameras based on /dev/v4l/by-id/*" 3>&1 1>&2 2>&3)
+	
+	
+	# MJPEG-Streamer Single/Multi Camera Setup
+	if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
+		msg h "MJPEG-Streamer Multi Camera Setup"
+		 
+		# Menu Checklist MJPEG Streamer Camera(s)
+		whiptail_list_entry_options=()
+		whiptail_title="MJPEG Streamer Camera(s)"
+		whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
+		
+		# Entry Options by ID (so they can be mapped to a particular port)
+		for dev in $(ls -1 /dev/v4l/by-id/ | grep index0); do
+			whiptail_list_entry_options+=("$dev")
+			whiptail_list_entry_options+=("Device by ID")
+			whiptail_list_entry_options+=("ON")
+		done
+		
+		# Present Checklist
+		whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
+		whiptail_list_entry_selected=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+		
+	else # [[ ${whiptail_menu_entry_selected[*]} =~ 'Single' ]]; then
+		msg h "MJPEG-Streamer Single Camera Setup"
+		whiptail_list_entry_selected+=("/dev/video0")
+	fi
+		
+	# Process Selections
+	i=0  # Instance Counter
+	mapfile -t list_entry_selected <<< "${whiptail_list_entry_selected}"
+	for entry_selected in "${list_entry_selected[@]}"; do
+		
+		# Add Path to Camera Devices based on selection
+		if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
+			# Multiple Device by ID
+			camera_device="/dev/v4l/by-id/${list_entry_selected}"
+		else 
+			# Single Device by ID
+			camera_device="${list_entry_selected}"
+		fi
+		
+		# Camera Resolution Get Options
+		whiptail_list_entry_resolution=()
+		for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP "[[:digit:]]+x[[:digit:]]+" | sort -nr | uniq); do
+			whiptail_list_entry_resolution+=("$entry"  "Resolution")
+		done
+		
+		# Camera Resolution Menu
+		camera_resolution=$(whiptail --menu --title "MJPEG Streamer Camera(s) Resolution" \
+		"Select Camera Resolution for Camera: \n${camera_device}\n\nThe lower the resolution the less proccessing power required. Lower resolutions are recommeneded." \
+		--nocancel --ok-button "Apply" \
+		--backtitle "JBDKSJFJKSDHF" \
+		18 84 6 \
+		"${whiptail_list_entry_resolution[@]}" 3>&1 1>&2 2>&3)
+		
+		# Camera FPS Get Options
+		whiptail_list_entry_fps=()
+		for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP '\(\K(\d+)(?=.*fps)' | sort -n | uniq); do
+			whiptail_list_entry_fps+=("$entry"  "FPS")
+		done
+		
+		# Camera FPS Menu
+		camera_fps=$(whiptail --menu --title "MJPEG Streamer Camera(s) FPS" \
+		"Select Camera Frame Per Second (FPS) for Camera: \n${camera_device}\n\nThe lower the FPS the less proccessing power required. Lower FPS are recommeneded." \
+		--nocancel --ok-button "Apply" \
+		--backtitle "JBDKSJFJKSDHF" \
+		18 84 6 \
+		"${whiptail_list_entry_fps[@]}" 3>&1 1>&2 2>&3)
+		
+		# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
+		msg i "MJPEG-Streamer Service Instance: mjpg-streamer@${i} | ${list_entry_selected}"
+		msg % "Creating MJPEG-Streamer Service Instance: mjpg-streamer@${i}" \
+			"sudo cp --update \"/lib/systemd/system/mjpg-streamer@.service\" \"/etc/systemd/system/mjpg-streamer@${i}.service\";
+			 sudo sed -i \"s|Environment=INPUT_OPTIONS.*|Environment=INPUT_OPTIONS=\\\"input_uvc.so --device ${camera_device} --resolution ${camera_resolution} --fps ${camera_fps} --yuv\\\"|\" \"/etc/systemd/system/mjpg-streamer@${i}.service\" "
+		
+		# Outputing Instance Infomation
+		msg - "Service Instance Settings: mjpg-streamer@${i} | /etc/systemd/system/mjpg-streamer@${i}.service" \
+			"$(grep "Environment=INPUT_OPTIONS" "/etc/systemd/system/mjpg-streamer@${i}.service"; \
+			echo -ne '    '; grep "Environment=OUTPUT_OPTIONS" "/etc/systemd/system/mjpg-streamer@${i}.service"; \
+			echo -ne '    '; grep "^ExecStart=" "/etc/systemd/system/mjpg-streamer@${i}.service")
+			\n    Note: These settings can be changed with command: sudo systemctl edit --full mjpg-streamer@${i}"
+		
+		# Reload Services
+		msg % "Reloading Service Deamon" \
+			"sudo systemctl daemon-reload"
+		
+		# Instance Start
+		msg % "Starting Service Instance Settings: mjpg-streamer@${i}" \
+			"sudo service mjpg-streamer@${i} restart"
+		
+		# Instance Status
+		msg - "Status of Service Instance Settings: mjpg-streamer@${i}" \
+			"$(sudo systemctl status mjpg-streamer@${i})"
+		
+		# Instance URL Infomation
+		msg i "MJPEG-Streamer@${i} is now ready can be accessed at: http://localhost:808${i} | http://${HOST_IP}:808${i}"
+		
+		# Increment Index
+		((i=i+1))  # let "i++"
+	done
+fi
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Main [ Install FFMpeg from Package Manager ]  for recording mjpg-streamer streams to file, saving live streams
+# ----------------------------------------------------------------------------------------------------------------------------------
+# ## Install FFMpeg from Package Manager
+# sudo apt-get install ffmpeg -y
+# 
+# 
+# ### Get Scrips
+# # Download Repo
+# cd /tmp
+# git clone https://github.com/cncjs/cncjs-pi-raspbian.git
+# 
+# # Copy Repo Contents
+# mkdir ~/Videos/
+# cd ~/Videos/
+# cp /tmp/cncjs-pi-raspbian/Videos/* ~/Videos/
+# chmod +x *.sh
+# 
+# 
+# ### Create CRON JOB for Streamer
+# ```
+# crontab -e
+# ### PASTE: @reboot ~/Videos/mjpg-streamer.sh start
+# ### SAVE & EXIT
+# ```
+
+
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Start CNCjs ]  start CNCjs for testing / validating
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
 	msg h "Starting CNCjs"
 	msg i "Starting CNCjs"
 	msg ! " └ To Stop Press (CTRL + C)"
@@ -768,7 +1077,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Reboot ]  reboot after install
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A20' ]]; then
 	msg h "Rebooting"
 	msg % "Rebooting Raspberry Pi" \
 	  "sudo reboot"
