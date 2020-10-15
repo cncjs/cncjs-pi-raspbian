@@ -14,9 +14,12 @@
 #   Replaces Prebuilt Images: https://github.com/cncjs/cncjs-pi-raspbian
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SCRIPT_VERSION=1.0.16
-SCRIPT_DATE=$(date -d '2020/10/08')
+SCRIPT_TITLE="CNCjs Installer"
+SCRIPT_VERSION=1.0.17
+SCRIPT_DATE=$(date -I --date '2020/10/11')
 SCRIPT_AUTHOR="Austin St. Aubin"
+SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
+echo "${SCRIPT_TITLE_FULL}"
 # ===========================================================================
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -94,8 +97,8 @@ function spinner() {
 	# spin animation
 	###while kill -0 $pid 2>/dev/null; do
 	while ps -p $pid >/dev/null; do
-		for i in ${spin_chars[@]}; do 
-			echo -ne "\r  [$i]  $2  ";
+		for spin_i in ${spin_chars[@]}; do 
+			echo -ne "\r  [$spin_i]  $2  ";
 			sleep 0.1;
 		done;
 	done
@@ -251,6 +254,7 @@ EOF
 # ----------------------------------------------------------------------------------------------------------------------------------
 # $(curl --silent "https://api.github.com/repos/cncjs/cncjs/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')  # Get CNCjs Latest Version
 echo -e "
+${SCRIPT_TITLE_FULL}
      _______   ________  _
     / ____/ | / / ____/ (_)____
    / /   /  |/ / /     / / ___/
@@ -312,7 +316,7 @@ declare whiptail_list_entry_options=(\
 	"A10 Reboot" "(Optional) Reboot after install." "YES" \
   )
 
-declare whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
+whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
 
 # Present Checklist
 whiptail_list_selected_descriptions=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
@@ -488,8 +492,6 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	else
 		whiptail_list_entry_options+=("Latest Version ")
 	fi
-	whiptail_list_entry_options+=("ON")
-	
 	
 	# Proccess and Flip Array (so newest at top)
 	# for entry in "${!CNCJS_VERSIONS[@]}"; do
@@ -502,11 +504,9 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 		else
 			whiptail_list_entry_options+=(" ")
 		fi
-		
-		whiptail_list_entry_options+=("OFF")
 	done
 	
-	cncjs_version_install=$(whiptail --radiolist --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+	cncjs_version_install=$(whiptail --menu --title "${whiptail_title}" "${whiptail_message}" 30 62 20 "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 	
     #msg % "Install CNCjs with NPM" 'sudo npm install -g cncjs@latest --unsafe-perm'
 	msg % "Installing CNCjs (v${cncjs_version_install}) with NPM" \
@@ -569,7 +569,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
 	# Make Iptables Persistent
-	msg %% "Making Iptables Persistent, select yes if prompted" \
+	msg %% "Making Iptables Persistent, select yes or press enter if prompted" \
 		'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
