@@ -15,7 +15,7 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.19
+SCRIPT_VERSION=1.0.20
 SCRIPT_DATE=$(date -I --date '2020/10/16')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
@@ -652,7 +652,11 @@ EOF
 	
 	# Instance Start
 	msg % "Starting Service" \
-		"sudo service cncjs restart"
+		"sudo systemctl restart cncjs"
+		
+		# Instance Start
+	msg % "Enabling Service" \
+		"sudo systemctl enable cncjs"
 
 	# Instance Status
 	msg - "Status of Service" \
@@ -669,11 +673,14 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup IPtables"
+	
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
-	# Make Iptables Persistent
-	msg %% "Making Iptables Persistent, select yes or press enter if prompted" \
+	# Make Iptables Persistent (silent install)
+	echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+	echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+	msg %% "Making Iptables Persistent" \
 		'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
@@ -766,11 +773,11 @@ EOF
 		sudo systemctl set-default multi-user.target
 		sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
 		# --------------------------------------------
-sudo sh -c "cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
+cat << EOF | sudo tee "/etc/systemd/system/getty@tty1.service.d/autologin.conf" >/dev/null 2>&1
 [Service]
 ExecStart=
 ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
-EOF"
+EOF
 		# --------------------------------------------
 	fi
 	# =============================================
@@ -849,6 +856,9 @@ fi
 if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 	
 	msg h "MJPEG-Streamer Setup"
+	
+	# Detect if camera pressent
+	#/dev/video*    ###############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 	
 	msg % "Installing Build Tools & Dependencies" \
 		'sudo apt-get install -qq -y build-essential libjpeg8-dev imagemagick libv4l-dev cmake git'
@@ -1110,7 +1120,11 @@ EOF
 		
 		# Instance Start
 		msg % "Starting Service Instance Settings: mjpg-streamer@${i}" \
-			"sudo service mjpg-streamer@${i} restart"
+			"sudo systemctl restart mjpg-streamer@${i}"
+			
+		# Instance Start
+		msg % "Enabling Service Instance Settings: mjpg-streamer@${i}" \
+			"sudo systemctl enable mjpg-streamer@${i}"
 		
 		# Instance Status
 		msg - "Status of Service Instance: mjpg-streamer@${i}" \
