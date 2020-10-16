@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.18
-SCRIPT_DATE=$(date -I --date '2020/10/15')
+SCRIPT_VERSION=1.0.19
+SCRIPT_DATE=$(date -I --date '2020/10/16')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -252,7 +252,7 @@ EOF
 # -- Output [ Header ]  welcome message
 # ----------------------------------------------------------------------------------------------------------------------------------
 # $(curl --silent "https://api.github.com/repos/cncjs/cncjs/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')  # Get CNCjs Latest Version
-echo -e "${COL_GREY}${SCRIPT_TITLE_FULL}${COL_NC}
+echo -e "${COL_BLACK}${SCRIPT_TITLE_FULL}${COL_NC}
      _______   ________  _
     / ____/ | / / ____/ (_)____
    / /   /  |/ / /     / / ___/
@@ -307,12 +307,11 @@ declare whiptail_list_entry_options=(\
 	"A03 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "YES" \
 	"A04 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
 	"A05 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
-	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
-	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
-	"A08 Autostart & Managment Task w/ Crontab" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
+	"A06 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
+	"A07 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
+	"A08 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
 	"A09 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
-	"A10 Start CNCjs after Install" "(Optional) Test CNCjs Install after script finishes." "NO" \
-	"A20 Reboot" "(Optional) Reboot after install." "YES" \
+	"A10 Reboot" "(Optional) Reboot after install." "YES" \
   )
 
 whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -559,10 +558,116 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 	fi
 fi
 
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Main [ Autostart Autostart Service ]  start CNCjs on bootup w/ Systemd
+# ----------------------------------------------------------------------------------------------------------------------------------
+if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
+	msg h "Create CNCjs Service for Autostart"
+	
+	# Service
+	msg i "Creating CNCjs Service w/ Systemd"
+	# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	cat << EOF | sudo tee "/etc/systemd/system/cncjs.service" >/dev/null 2>&1
+[Unit]
+Description=CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.
+Documentation=https://github.com/cncjs/cncjs
+After=syslog.target
+After=network.target
+Wants=network.target
+
+
+[Service]
+Type=simple
+
+# Restart service after x seconds if node service crashes
+Restart=on-failure
+RestartSec=5s
+
+# # User & Group
+User=${USER}
+# Group=user
+WorkingDirectory=${HOME}
+
+# Capabilities & Security Settings
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+# ProtectHome=true
+ProtectSystem=full
+
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=cncjs
+
+# = Option 1 = (Environment)
+$(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
+# cncjs --help
+Environment=OPTIONS= --port 8000 --config "${CNCJS_EXT_DIR}/.cncrc" --watch-directory "${HOME}/Documents"
+#include space here ^^
+
+# = Option 2 = (EnvironmentFile)
+# EnvironmentFile=-/etc/cncjs.d/default.conf
+
+# = Start Process =
+Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin
+ExecStart=$(which cncjs) \${OPTIONS}
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+	
+	# -----------------------------------------------------
+	
+	# Service Settings
+	msg i "Creating CNCjs Service Settings File (Optional)"
+	# --------------------------
+	sudo mkdir -p "/etc/cncjs.d/" >&4 2>&1
+	cat << EOF | sudo tee "/etc/cncjs.d/default.conf" >/dev/null 2>&1
+# CNCjs Settings
+# https://github.com/cncjs/cncjs
+
+$(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
+# cncjs --help
+OPTIONS="--port 8000"
+
+EOF
+	
+	# -----------------------------------------------------
+	
+	# Edit Service File w/ Changes
+	msg % "Editing CNCjs Service Start Options: OPTIONS HERE" \
+		"sudo sed -i \"s|Environment=OPTIONS.*|Environment=OPTIONS= ${cncjs_flags}|\" \"/etc/systemd/system/cncjs.service\" "
+	
+	# Outputing Instance Infomation
+	msg - "Service Settings: /etc/systemd/system/cncjs.service" \
+		"$(grep "Environment=OPTIONS" "/etc/systemd/system/cncjs.service"; \
+		echo -ne '    '; grep "^ExecStart=" "/etc/systemd/system/cncjs.service")
+		\n    Note: These settings can be changed with command: sudo systemctl edit --full cncjs\n      Check CNCjs Server Status with: sudo service cncjs status"
+	
+	# Reload Services
+	msg % "Reloading Service Deamon" \
+		"sudo systemctl daemon-reload"
+	
+	# Instance Start
+	msg % "Starting Service" \
+		"sudo service cncjs restart"
+
+	# Instance Status
+	msg - "Status of Service" \
+		"$(sudo systemctl status cncjs)"
+
+	# Instance URL Infomation
+	msg i "CNCjs is now started and can be accessed at: ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
+	
+fi
+
+
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup IPtables"
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
@@ -586,7 +691,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	msg h "Setup Web Kiosk"
 	
 	# =============================================
@@ -737,21 +842,6 @@ EOF
 	sudo chmod a+x "${CNCJS_EXT_DIR}/cncjs-kiosk.sh"
 fi
 
-# ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Autostart & Managment Task w/ Crontab ]  start CNCjs on bootup
-# ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
-	# https://github.com/cncjs/cncjs/wiki/Setup-Guide:-Raspberry-Pi-%7C-Install-Node.js-via-Package-Manager-*(Recommended)*
-	msg h "Autostart & Managment Task w/ Crontab"
-	msg % "Setup & Configure CNCjs Autostart" \
-	  "((crontab -l || true) | grep -v cncjs; echo \"@reboot $(which cncjs) ${cncjs_flags} >> $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
-	# Disable Autostart
-	# crontab -l | grep -v cncjs | crontab -
-	msg % "Rotate Log Weekly (4000 lines)" \
-	  "((crontab -l || true) | grep -v 'tail -n'; echo \"@weekly tail -n 4000 $HOME/.cncjs/cncjs.log > $HOME/.cncjs/cncjs.log 2>&1\") | crontab -"
-	msg - 'Crontab Schedualed Task' "$(crontab -l)"
-fi
-
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Install MJPG-Streamer & Tools ]  w/ package manager
@@ -803,7 +893,7 @@ User=webcam
 Group=video
 
 # Capabilities & Security Settings
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
@@ -837,7 +927,7 @@ EOF
 # -----------------------------------------------------
 
 # Service Settings
-msg i "Creating MJPEG-Streamer Service Settings"
+msg i "Creating MJPEG-Streamer Service Settings File (Optional)"
 # --------------------------
 sudo mkdir -p "/etc/mjpg-streamer.d/" >&4 2>&1
 cat << EOF | sudo tee "/etc/mjpg-streamer.d/default.conf" >/dev/null 2>&1
@@ -885,7 +975,7 @@ User=webcam
 Group=video
 
 # Capabilities & Security Settings
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
@@ -1023,7 +1113,7 @@ EOF
 			"sudo service mjpg-streamer@${i} restart"
 		
 		# Instance Status
-		msg - "Status of Service Instance Settings: mjpg-streamer@${i}" \
+		msg - "Status of Service Instance: mjpg-streamer@${i}" \
 			"$(sudo systemctl status mjpg-streamer@${i})"
 		
 		# Instance URL Infomation
@@ -1062,22 +1152,22 @@ fi
 # ```
 
 
-# ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Start CNCjs ]  start CNCjs for testing / validating
-# ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
-	msg h "Starting CNCjs"
-	msg i "Starting CNCjs"
-	msg ! " └ To Stop Press (CTRL + C)"
-	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
-	msg - 'CNCjs Start Command' "(which cncjs) --verbose ${cncjs_flags}"
-	$(which cncjs) --verbose ${cncjs_flags}
-fi
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# # -- Main [ Start CNCjs ]  start CNCjs for testing / validating
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
+# 	msg h "Starting CNCjs"
+# 	msg i "Starting CNCjs"
+# 	msg ! " └ To Stop Press (CTRL + C)"
+# 	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
+# 	msg - 'CNCjs Start Command' "(which cncjs) --verbose ${cncjs_flags}"
+# 	$(which cncjs) --verbose ${cncjs_flags}
+# fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Reboot ]  reboot after install
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A20' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
 	msg h "Rebooting"
 	msg % "Rebooting Raspberry Pi" \
 	  "sudo reboot"
