@@ -7,3 +7,4 @@ node_modules
 ehthumbs.db
 Thumbs.db
 .log
+*.code-workspace
