@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.20
-SCRIPT_DATE=$(date -I --date '2020/10/16')
+SCRIPT_VERSION=1.0.21
+SCRIPT_DATE=$(date -I --date '2020/10/17')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -857,9 +857,6 @@ if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 	
 	msg h "MJPEG-Streamer Setup"
 	
-	# Detect if camera pressent
-	#/dev/video*    ###############################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
-	
 	msg % "Installing Build Tools & Dependencies" \
 		'sudo apt-get install -qq -y build-essential libjpeg8-dev imagemagick libv4l-dev cmake git'
 	msg % "Building & Installing Latest MJPEG-Streamer from GIT Repository" \
@@ -1024,37 +1021,45 @@ EOF
 		"sudo systemctl daemon-reload"
 	
 	# =====================================================
-		
-	# Menu MJPEG Streamer Setup
-	whiptail_title="MJPEG-Streamer Camera Options"
-	whiptail_message="mjpg-streamer is a command line application that copies JPEG frames from one or more input plugins to multiple output plugins. It can be used to stream JPEG files over an IP-based network from a webcam to various types of viewers such as Chrome, Firefox, Cambozola, VLC, mplayer, and other software capable of receiving MJPG streams\n\nWould you like MJPG Stream setup for any one camera you plug in. This makes using a camera very easy. Just plug any camera in and it will work.\n\nAlternatively, if you plan to plugin muluple camera's at once and want seperate streams for each camera. This script can setup seperate streams where each stream has a camera assisgend to it by device ID. This way the streams do not change on reboot.\nHowever, new cameras will require changing ID. You can do that by just reruning this script."
 	
-	whiptail_menu_entry_selected=$(whiptail --menu --backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" --nocancel --ok-button "Setup Camera(s)" --title "${whiptail_title}" "${whiptail_message}" 24 78 2 \
-		"Single Camera" "  Setup MJPEG-Streamer for a single camera on /dev/video0" \
-		"Multiple Cameras" "  Setup MJPEG-Streamer cameras based on /dev/v4l/by-id/*" 3>&1 1>&2 2>&3)
-	
-	
-	# MJPEG-Streamer Single/Multi Camera Setup
-	if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
-		msg h "MJPEG-Streamer Multi Camera Setup"
-		 
-		# Menu Checklist MJPEG Streamer Camera(s)
-		whiptail_list_entry_options=()
-		whiptail_title="MJPEG Streamer Camera(s)"
-		whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
+	# Check if Camera's Avalible 
+	if [[ -e "/dev/video0" ]]; then
 		
-		# Entry Options by ID (so they can be mapped to a particular port)
-		for dev in $(ls -1 /dev/v4l/by-id/ | grep index0); do
-			whiptail_list_entry_options+=("$dev")
-			whiptail_list_entry_options+=("Device by ID")
-			whiptail_list_entry_options+=("ON")
-		done
+		# Menu MJPEG Streamer Setup
+		whiptail_title="MJPEG-Streamer Camera Options"
+		whiptail_message="mjpg-streamer is a command line application that copies JPEG frames from one or more input plugins to multiple output plugins. It can be used to stream JPEG files over an IP-based network from a webcam to various types of viewers such as Chrome, Firefox, Cambozola, VLC, mplayer, and other software capable of receiving MJPG streams\n\nWould you like MJPG Stream setup for any one camera you plug in. This makes using a camera very easy. Just plug any camera in and it will work.\n\nAlternatively, if you plan to plugin muluple camera's at once and want seperate streams for each camera. This script can setup seperate streams where each stream has a camera assisgend to it by device ID. This way the streams do not change on reboot.\nHowever, new cameras will require changing ID. You can do that by just reruning this script."
 		
-		# Present Checklist
-		whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
-		whiptail_list_entry_selected=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+		whiptail_menu_entry_selected=$(whiptail --menu --backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" --nocancel --ok-button "Setup Camera(s)" --title "${whiptail_title}" "${whiptail_message}" 24 78 2 \
+			"Single Camera" "  Setup MJPEG-Streamer for a single camera on /dev/video0" \
+			"Multiple Cameras" "  Setup MJPEG-Streamer cameras based on /dev/v4l/by-id/*" 3>&1 1>&2 2>&3)
 		
-	else # [[ ${whiptail_menu_entry_selected[*]} =~ 'Single' ]]; then
+		
+		# MJPEG-Streamer Single/Multi Camera Setup
+		if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
+			msg h "MJPEG-Streamer Multi Camera Setup"
+			 
+			# Menu Checklist MJPEG Streamer Camera(s)
+			whiptail_list_entry_options=()
+			whiptail_title="MJPEG Streamer Camera(s)"
+			whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
+			
+			# Entry Options by ID (so they can be mapped to a particular port)
+			for dev in $(ls -1 /dev/v4l/by-id/ | grep index0); do
+				whiptail_list_entry_options+=("$dev")
+				whiptail_list_entry_options+=("Device by ID")
+				whiptail_list_entry_options+=("ON")
+			done
+			
+			# Present Checklist
+			whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
+			whiptail_list_entry_selected=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+			
+		else # [[ ${whiptail_menu_entry_selected[*]} =~ 'Single' ]]; then
+			msg h "MJPEG-Streamer Single Camera Setup"
+			whiptail_list_entry_selected+=("/dev/video0")
+		fi
+	else 
+		msg ! "No Camera Detected, setting up for single camera operation."
 		msg h "MJPEG-Streamer Single Camera Setup"
 		whiptail_list_entry_selected+=("/dev/video0")
 	fi
@@ -1073,39 +1078,50 @@ EOF
 			camera_device="${list_entry_selected}"
 		fi
 		
-		# Camera Resolution Get Options
-		whiptail_list_entry_resolution=()
-		for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP "[[:digit:]]+x[[:digit:]]+" | sort -nr | uniq); do
-			whiptail_list_entry_resolution+=("$entry"  "Resolution")
-		done
-		
-		# Camera Resolution Menu
-		camera_resolution=$(whiptail --menu --title "MJPEG Streamer Camera(s) Resolution" \
-		"Select Camera Resolution for Camera: \n${camera_device}\n\nThe lower the resolution the less proccessing power required. Lower resolutions are recommeneded." \
-		--nocancel --ok-button "Apply" \
-		--backtitle "JBDKSJFJKSDHF" \
-		18 84 6 \
-		"${whiptail_list_entry_resolution[@]}" 3>&1 1>&2 2>&3)
-		
-		# Camera FPS Get Options
-		whiptail_list_entry_fps=()
-		for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP '\(\K(\d+)(?=.*fps)' | sort -n | uniq); do
-			whiptail_list_entry_fps+=("$entry"  "FPS")
-		done
-		
-		# Camera FPS Menu
-		camera_fps=$(whiptail --menu --title "MJPEG Streamer Camera(s) FPS" \
-		"Select Camera Frame Per Second (FPS) for Camera: \n${camera_device}\n\nThe lower the FPS the less proccessing power required. Lower FPS are recommeneded." \
-		--nocancel --ok-button "Apply" \
-		--backtitle "JBDKSJFJKSDHF" \
-		18 84 6 \
-		"${whiptail_list_entry_fps[@]}" 3>&1 1>&2 2>&3)
-		
-		# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
-		msg i "MJPEG-Streamer Service Instance: mjpg-streamer@${i} | ${list_entry_selected}"
-		msg % "Creating MJPEG-Streamer Service Instance: mjpg-streamer@${i}" \
-			"sudo cp --update \"/lib/systemd/system/mjpg-streamer@.service\" \"/etc/systemd/system/mjpg-streamer@${i}.service\";
-			 sudo sed -i \"s|Environment=INPUT_OPTIONS.*|Environment=INPUT_OPTIONS=\\\"input_uvc.so --device ${camera_device} --resolution ${camera_resolution} --fps ${camera_fps} --yuv\\\"|\" \"/etc/systemd/system/mjpg-streamer@${i}.service\" "
+		# Detect if camera exist, then promt for customisations
+		if [[ -e "${camera_device}" ]]; then
+			
+			# Camera Resolution Get Options
+			whiptail_list_entry_resolution=()
+			for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP "[[:digit:]]+x[[:digit:]]+" | sort -nr | uniq); do
+				whiptail_list_entry_resolution+=("$entry"  "Resolution")
+			done
+			
+			# Camera Resolution Menu
+			camera_resolution=$(whiptail --menu --title "MJPEG Streamer Camera(s) Resolution" \
+			"Select Camera Resolution for Camera: \n${camera_device}\n\nThe lower the resolution the less proccessing power required. Lower resolutions are recommeneded." \
+			--nocancel --ok-button "Apply" \
+			--backtitle "JBDKSJFJKSDHF" \
+			18 84 6 \
+			"${whiptail_list_entry_resolution[@]}" 3>&1 1>&2 2>&3)
+			
+			# Camera FPS Get Options
+			whiptail_list_entry_fps=()
+			for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP '\(\K(\d+)(?=.*fps)' | sort -n | uniq); do
+				whiptail_list_entry_fps+=("$entry"  "FPS")
+			done
+			
+			# Camera FPS Menu
+			camera_fps=$(whiptail --menu --title "MJPEG Streamer Camera(s) FPS" \
+			"Select Camera Frame Per Second (FPS) for Camera: \n${camera_device}\n\nThe lower the FPS the less proccessing power required. Lower FPS are recommeneded." \
+			--nocancel --ok-button "Apply" \
+			--backtitle "JBDKSJFJKSDHF" \
+			18 84 6 \
+			"${whiptail_list_entry_fps[@]}" 3>&1 1>&2 2>&3)
+			
+			# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
+			msg i "MJPEG-Streamer Service Instance: mjpg-streamer@${i} | ${list_entry_selected}"
+			msg % "Creating MJPEG-Streamer Service Instance: mjpg-streamer@${i}" \
+				"sudo cp --update \"/lib/systemd/system/mjpg-streamer@.service\" \"/etc/systemd/system/mjpg-streamer@${i}.service\";
+				 sudo sed -i \"s|Environment=INPUT_OPTIONS.*|Environment=INPUT_OPTIONS=\\\"input_uvc.so --device ${camera_device} --resolution ${camera_resolution} --fps ${camera_fps} --yuv\\\"|\" \"/etc/systemd/system/mjpg-streamer@${i}.service\" "
+		else 
+			msg ! "Camera NOT Detected, default settings will be used for camera: ${camera_device}"
+			
+			# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
+			msg i "MJPEG-Streamer Service Instance: mjpg-streamer@${i} | ${list_entry_selected}"
+			msg % "Creating MJPEG-Streamer Service Instance: mjpg-streamer@${i}" \
+				"sudo cp --update \"/lib/systemd/system/mjpg-streamer@.service\" \"/etc/systemd/system/mjpg-streamer@${i}.service\" "
+		fi
 		
 		# Outputing Instance Infomation
 		msg - "Service Instance Settings: mjpg-streamer@${i} | /etc/systemd/system/mjpg-streamer@${i}.service" \
