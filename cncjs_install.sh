@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.21
-SCRIPT_DATE=$(date -I --date '2020/10/17')
+SCRIPT_VERSION=1.0.22
+SCRIPT_DATE=$(date -I --date '2020/11/01')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -41,7 +41,7 @@ readonly HOST_IP=$(hostname -I | cut -d' ' -f1)
 SYSTEM_CHECK=true  # Preform system check to insure this script is known to be compatable with this OS
 
 CNCJS_EXT_DIR="${HOME}/.cncjs"
-cncjs_flags="--port 8000 --config "${CNCJS_EXT_DIR}/cncrc.cfg" --watch-directory "${CNCJS_EXT_DIR}/watch""  # --host ${HOST_IP}
+cncjs_flags="--port 8000 --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
 COMPATIBLE_OS_ID='raspbian'
 COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
 
@@ -599,20 +599,17 @@ StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=cncjs
 
-# = Option 1 = (Environment)
+# = Start Process =
+Environment="NODE_ENV=production"
+Environment="PATH=/usr/bin:/usr/local/bin"
+# CNCjs Parameters
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
-Environment=OPTIONS= --port 8000 --config "${CNCJS_EXT_DIR}/.cncrc" --watch-directory "${HOME}/Documents"
-#include space here ^^
+ExecStart=$(which cncjs) --port 8000 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watch-directory \"${HOME}/Documents\"
 
-# = Option 2 = (EnvironmentFile)
-# EnvironmentFile=-/etc/cncjs.d/default.conf
-
-# = Start Process =
-Environment=NODE_ENV=production
-Environment=PATH=/usr/bin:/usr/local/bin
-ExecStart=$(which cncjs) \${OPTIONS}
-
+# = Alternative Method = (EnvironmentFile)
+#EnvironmentFile=-/etc/cncjs.d/default.conf
+#ExecStart=$(which cncjs) \${OPTIONS}
 
 [Install]
 WantedBy=multi-user.target
@@ -638,12 +635,11 @@ EOF
 	
 	# Edit Service File w/ Changes
 	msg % "Editing CNCjs Service Start Options: OPTIONS HERE" \
-		"sudo sed -i \"s|Environment=OPTIONS.*|Environment=OPTIONS= ${cncjs_flags}|\" \"/etc/systemd/system/cncjs.service\" "
+		"sudo sed -i \"s|ExecStart=.*|ExecStart=$(which cncjs) ${cncjs_flags}|\" \"/etc/systemd/system/cncjs.service\" "
 	
 	# Outputing Instance Infomation
 	msg - "Service Settings: /etc/systemd/system/cncjs.service" \
-		"$(grep "Environment=OPTIONS" "/etc/systemd/system/cncjs.service"; \
-		echo -ne '    '; grep "^ExecStart=" "/etc/systemd/system/cncjs.service")
+		"$(grep "^ExecStart=" "/etc/systemd/system/cncjs.service")
 		\n    Note: These settings can be changed with command: sudo systemctl edit --full cncjs\n      Check CNCjs Server Status with: sudo service cncjs status"
 	
 	# Reload Services
@@ -654,7 +650,7 @@ EOF
 	msg % "Starting Service" \
 		"sudo systemctl restart cncjs"
 		
-		# Instance Start
+	# Instance Enable
 	msg % "Enabling Service" \
 		"sudo systemctl enable cncjs"
 
