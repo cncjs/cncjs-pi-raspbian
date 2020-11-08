@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.22
-SCRIPT_DATE=$(date -I --date '2020/11/01')
+SCRIPT_VERSION=1.0.23
+SCRIPT_DATE=$(date -I --date '2020/11/08')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -280,6 +280,9 @@ echo -e "${COL_BLACK}${SCRIPT_TITLE_FULL}${COL_NC}
 
 message="This script will install the lastest version of CNCjs w/ NodeJS.
                      https://github.com/cncjs
+
+*THIS INSTALL SCRIPT IS STILL IN BETA, IT MIGHT HAVE ISSUES.*
+Please report any issues with this install script to: https://github.com/cncjs/cncjs-pi-raspbian/issues
 
 CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG. Such CNC controllers are often implemented with a tiny embedded computer such as an Arduino with added hardware for controlling stepper motors, spindles, lasers, 3D printing extruders, and the like. The GCode commands that tell the CNC controller what to do are fed to it from a serial port.
              
@@ -590,7 +593,7 @@ User=${USER}
 WorkingDirectory=${HOME}
 
 # Capabilities & Security Settings
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_BIND_SERVICE
 # ProtectHome=true
 ProtectSystem=full
 
@@ -601,7 +604,6 @@ SyslogIdentifier=cncjs
 
 # = Start Process =
 Environment="NODE_ENV=production"
-Environment="PATH=/usr/bin:/usr/local/bin"
 # CNCjs Parameters
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
@@ -669,7 +671,12 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup IPtables"
+
+	# Install IPtables & any other related packages
+	msg %% "Install Iptables" \
+		'sudo apt-get install iptables  -qq -y -f'
 	
+	# Setup IPtables Rule
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
