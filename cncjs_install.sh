@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.0.23
-SCRIPT_DATE=$(date -I --date '2020/11/08')
+SCRIPT_VERSION=1.1.0
+SCRIPT_DATE=$(date -I --date '2020/11/09')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -27,7 +27,7 @@ SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE
 # -e option instructs bash to immediately exit if any command [1] has a non-zero exit status
 # We do not want users to end up with a partially working install, so we exit the script
 # instead of continuing the installation with something broken
-set -e
+# set -e
 
 # Catch Expections to users home directory.
 cd ~/
@@ -104,8 +104,6 @@ function spinner() {
 	
 	tput cnorm  # cursor visible
 	
-	echo -ne "\r  ${PASS} ${COL_GREEN} $2 ${COL_NC}  \n";
-	
 	wait $pid   # capture exit code
 	return $?
 }
@@ -142,14 +140,36 @@ msg() {
 			echo -e "${COL_GREY}  ${2} ${line_break:${#2} + 1}\n    ${3}\n  ${line_break} ${COL_NC}"
 			;;
 		'%') # Spinner / Command
-			# echo "[${1}] | [${2}] | [${3}] | [${4}]"
-			# /bin/sh -c "${3}" & spinner $! "${2}" 
-			/bin/sh -c "${3}" >&4 2>&1 & spinner $! "${2}"
+			/bin/sh -c "${3}" >&4 2>&1 & spinner $! "${2}" 
+			
+			# Capture Error Code
+			ERROR_CODE=$?
+
+			# Display Pass/Fail based on error Code
+			if [[ ${ERROR_CODE} -eq 0 ]]; then 
+				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
+			else 
+				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
+			fi
+			
+			# Return Error Code
+			return ${ERROR_CODE}
 			;;
 		'%%') # Spinner / Command (No stdout Catpture, only capture stderr)
-			# echo "[${1}] | [${2}] | [${3}] | [${4}]"
-			# /bin/sh -c "${3}" & spinner $! "${2}" 
-			/bin/sh -c "${3}" 2>&4 & spinner $! "${2}"
+			/bin/sh -c "${3}" 2>&4 & spinner $! "${2}" 
+			
+			# Capture Error Code
+			ERROR_CODE=$?
+
+			# Display Pass/Fail based on error Code
+			if [[ ${ERROR_CODE} -eq 0 ]]; then 
+				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
+			else 
+				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
+			fi
+			
+			# Return Error Code
+			return ${ERROR_CODE}
 			;;
 		*) # Catch-all
 			echo -e "${@}"
@@ -283,9 +303,10 @@ message="This script will install the lastest version of CNCjs w/ NodeJS.
 
 *THIS INSTALL SCRIPT IS STILL IN BETA, IT MIGHT HAVE ISSUES.*
 Please report any issues with this install script to: https://github.com/cncjs/cncjs-pi-raspbian/issues
+If any part of this script fails, try reboooting, then re-run this script.
 
 CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG. Such CNC controllers are often implemented with a tiny embedded computer such as an Arduino with added hardware for controlling stepper motors, spindles, lasers, 3D printing extruders, and the like. The GCode commands that tell the CNC controller what to do are fed to it from a serial port.
-             
+
         PRESS 'ESC' or 'CTRL + C' TO ABORT INSTALL AT ANY TIME.
         
 Press 'ok' to start install of the lastest version of CNCjs w/ NodeJS"
@@ -314,7 +335,7 @@ declare whiptail_list_entry_options=(\
 	"A07 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
 	"A08 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
 	"A09 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
-	"A10 Reboot" "(Optional) Reboot after install." "YES" \
+	"A10 Reboot" "(Optional) Reboot after install." "NO" \
   )
 
 whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -1205,3 +1226,9 @@ if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
 	msg % "Rebooting Raspberry Pi" \
 	  "sudo reboot"
 fi
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Main [ Finished ]  
+# ----------------------------------------------------------------------------------------------------------------------------------
+msg h "Finished"
+msg i "Script Finished, its recommended that you reboot your Raspberry Pi. \n   └── To reboot run the command: sudo reboot"
