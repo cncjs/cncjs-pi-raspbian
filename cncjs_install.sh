@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.0
-SCRIPT_DATE=$(date -I --date '2020/11/09')
+SCRIPT_VERSION=1.1.1
+SCRIPT_DATE=$(date -I --date '2020/11/10')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -150,6 +150,7 @@ msg() {
 				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
+				msg - "Latest Syslog Entries" "$(tail -n 8 /var/log/syslog)"
 			fi
 			
 			# Return Error Code
@@ -166,6 +167,7 @@ msg() {
 				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
+				msg - "Latest Syslog Entries" "$(tail -n 8 /var/log/syslog)"
 			fi
 			
 			# Return Error Code
@@ -286,7 +288,7 @@ echo -e "${COL_BLACK}${SCRIPT_TITLE_FULL}${COL_NC}
    
   CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.
   For a more complete introduction, see the Introduction section of the wiki page ( \e]8;;https://github.com/cncjs/cncjs/wiki/Introduction\ahttps://github.com/cncjs/cncjs/wiki/Introduction\e]8;;\a ).
-  ${COL_GREY}NOTE: This installer logs to syslog. You can view the syslog, with terminal command 'tail -f -n 50 /var/log/syslog'${COL_NC}
+  ${COL_GREY}NOTE: This installer logs to syslog. You can view the syslog, with terminal command: tail -f -n 50 /var/log/syslog ${COL_NC}
   ${COL_WHITE}==========================================================================${COL_NC}"
   
   echo "===== Starting CNCjs Install Script =====" >&4
@@ -694,7 +696,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup IPtables"
 
 	# Install IPtables & any other related packages
-	msg %% "Install Iptables" \
+	msg % "Install Iptables" \
 		'sudo apt-get install iptables  -qq -y -f'
 	
 	# Setup IPtables Rule
@@ -704,7 +706,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	# Make Iptables Persistent (silent install)
 	echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
 	echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
-	msg %% "Making Iptables Persistent" \
+	msg % "Making Iptables Persistent" \
 		'sudo apt-get install iptables-persistent -qq -y -f'
 	
 	# How-to: Save & Reload Rules
@@ -1231,4 +1233,4 @@ fi
 # -- Main [ Finished ]  
 # ----------------------------------------------------------------------------------------------------------------------------------
 msg h "Finished"
-msg i "Script Finished, its recommended that you reboot your Raspberry Pi. \n   └── To reboot run the command: sudo reboot"
+msg i "Script Finished, its recommended that you reboot your Raspberry Pi.\n   └── To reboot run the command: sudo reboot"
