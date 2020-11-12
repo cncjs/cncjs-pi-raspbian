@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.1
-SCRIPT_DATE=$(date -I --date '2020/11/10')
+SCRIPT_VERSION=1.1.2
+SCRIPT_DATE=$(date -I --date '2020/11/11')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -150,7 +150,8 @@ msg() {
 				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
-				msg - "Latest Syslog Entries" "$(tail -n 8 /var/log/syslog)"
+				echo -e "   └── Try to re-run this part of the script after rebooting."
+				msg - "Latest Syslog Entries" "$(tail -n 6 /var/log/syslog)"
 			fi
 			
 			# Return Error Code
@@ -167,7 +168,8 @@ msg() {
 				echo -ne "\r  ${PASS} ${COL_GREEN} ${2} ${COL_NC} \n";
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
-				msg - "Latest Syslog Entries" "$(tail -n 8 /var/log/syslog)"
+				echo -e "└── Try to re-run this part of the script after rebooting."
+				msg - "Latest Syslog Entries" "$(tail -n 6 /var/log/syslog)"
 			fi
 			
 			# Return Error Code
@@ -722,7 +724,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
+# -- Main [ Setup Web Kiosk ]  setup web kiosk for Rasp OS, and Rasp OS Slim
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	msg h "Setup Web Kiosk"
@@ -739,6 +741,9 @@ cat > "${HOME}/.config/lxsession/LXDE-pi/autostart" << EOF
 ${CNCJS_EXT_DIR}/cncjs-kiosk.sh
 EOF
 		# --------------------------------------------
+
+		# Set Kiosk User Varible
+		KIOSK_USER=$USER
 		
 		# Setup Autologin (GUI) on Raspberry Pi
 		msg i "Enabling Autologin (GUI)"
@@ -748,9 +753,9 @@ EOF
 sudo sh -c "cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
+ExecStart=-/sbin/agetty --autologin $KIOSK_USER --noclear %I \$TERM
 EOF"
-			sudo sed /etc/lightdm/lightdm.conf -i -e "s/^\(#\|\)autologin-user=.*/autologin-user=$USER/"
+			sudo sed /etc/lightdm/lightdm.conf -i -e "s/^\(#\|\)autologin-user=.*/autologin-user=$KIOSK_USER/"
 		else
 			whiptail --msgbox "lightdm auto login setup error" 20 60 2
 			return 1
@@ -861,7 +866,7 @@ sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/
 # --kiosk makes the browser occupy the entire screen.
 # If you want to kill the full-screen browser, use ALT-F4
 # If you omit --kiosk, the browser will start in a normal window
-chromium-browser --incognito --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
+chromium-browser  --incognito --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
 EOF
 	# --------------------------------------------
 
