@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.2
-SCRIPT_DATE=$(date -I --date '2020/11/11')
+SCRIPT_VERSION=1.1.4
+SCRIPT_DATE=$(date -I --date '2021/01/10')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -135,6 +135,9 @@ msg() {
 		'?') # Question
 			printf "  %b %b ${2} %b\\n" "${QSTN}" "${COL_NC}" "${COL_NC}  "
 			;;
+		'L') # Bracket
+			printf "  %b └── ${2} %b\\n" "${COL_GREY}" "${COL_NC}  "
+			;;
 		'-') # User Log Output
 			line_break='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
 			echo -e "${COL_GREY}  ${2} ${line_break:${#2} + 1}\n    ${3}\n  ${line_break} ${COL_NC}"
@@ -190,24 +193,24 @@ msg() {
 # msg % "This is a test!" "sleep 6"
 
 
-# ----------------------------------------------------------------------------------------------------------------------------------
-# -- Function [ Calculate Whiptail Size ]  spinner animation for commands in progress. From raspi-config (MIT license)
-# ----------------------------------------------------------------------------------------------------------------------------------
-calc_wt_size() {
-  # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
-  # output from tput. However in this case, tput detects neither stdout or 
-  # stderr is a tty and so only gives default 80, 24 values
-  WT_HEIGHT=18
-  WT_WIDTH=$(tput cols)
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# # -- Function [ Calculate Whiptail Size ]  spinner animation for commands in progress. From raspi-config (MIT license)
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# calc_wt_size() {
+#   # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
+#   # output from tput. However in this case, tput detects neither stdout or 
+#   # stderr is a tty and so only gives default 80, 24 values
+#   WT_HEIGHT=18
+#   WT_WIDTH=$(tput cols)
 
-  if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
-	WT_WIDTH=80
-  fi
-  if [ "$WT_WIDTH" -gt 178 ]; then
-	WT_WIDTH=120
-  fi
-  WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
-}
+#   if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
+# 	WT_WIDTH=80
+#   fi
+#   if [ "$WT_WIDTH" -gt 178 ]; then
+# 	WT_WIDTH=120
+#   fi
+#   WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
+# }
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -293,6 +296,7 @@ echo -e "${COL_BLACK}${SCRIPT_TITLE_FULL}${COL_NC}
   ${COL_GREY}NOTE: This installer logs to syslog. You can view the syslog, with terminal command: tail -f -n 50 /var/log/syslog ${COL_NC}
   ${COL_WHITE}==========================================================================${COL_NC}"
   
+  # Log Infomation
   echo "===== Starting CNCjs Install Script =====" >&4
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -415,6 +419,34 @@ detected_os_id=$(cat /etc/*release | grep '^ID=' | cut -d '=' -f2- | tr -d '"')
 detected_os_id_version=$(cat /etc/*release | grep '^VERSION_ID=' | cut -d '=' -f2- | tr -d '"')
 msg i "Detected OS: [ $detected_os_id | $detected_os_id_version | $(${COMPATIBLE_OS_GUI} && echo 'Compatible GUI' || echo 'No GUI') ]"
 
+# Log OS Build Info
+echo "Raspberry Pi OS Image Version" >&4
+cat /boot/issue.txt >&4  # /etc/rpi-issue
+
+# Display OS Build Info
+OS_DATE=$(grep -oE "[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}" /boot/issue.txt)
+case $(grep -o "stage." /boot/issue.txt) in
+  'stage1')
+    msg L "Raspberry Pi OS | Bare Bones | $OS_DATE"
+    ;;
+  'stage2')
+    msg L "Raspberry Pi OS | Light | $OS_DATE"
+    ;;
+  'stage3')
+    msg L "Raspberry Pi OS | Post-Light | $OS_DATE"
+    ;;
+  'stage4')
+    msg L "Raspberry Pi OS with desktop | Standard | $OS_DATE"
+    ;;
+  'stage5')
+    msg L "Raspberry Pi OS with desktop and recommended software | Full | $OS_DATE"
+    ;;
+  *)
+    msg L "Unknow OS Build"
+    ;;
+esac
+
+# Check Compatability
 if [[ ${SYSTEM_CHECK} == true ]] && [[ ${main_list_entry_selected[*]} =~ "A00" ]] ; then
 	if [[ "$detected_os_id" == "$COMPATIBLE_OS_ID" ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
 		msg p "Detected OS is compatable with this install script."
@@ -1238,4 +1270,5 @@ fi
 # -- Main [ Finished ]  
 # ----------------------------------------------------------------------------------------------------------------------------------
 msg h "Finished"
-msg i "Script Finished, its recommended that you reboot your Raspberry Pi.\n   └── To reboot run the command: sudo reboot"
+msg i "Script Finished, its recommended that you reboot your Raspberry Pi."
+msg L "To reboot run the command: sudo reboot"
