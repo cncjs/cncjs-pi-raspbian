@@ -14,8 +14,10 @@ Download & Install [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspb
 
 ### 2. Install CNCjs
 - ##### Method 1: Donwload and run installer.
+```
 URL="https://raw.githubusercontent.com/cncjs/cncjs-pi-raspbian/master/cncjs_install.sh"
 curl -sSL ${URL} | bash
+```
 
 - ##### Method 2: Download, then run installer.
 ```
