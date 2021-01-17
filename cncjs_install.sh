@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.4
-SCRIPT_DATE=$(date -I --date '2021/01/10')
+SCRIPT_VERSION=1.1.5
+SCRIPT_DATE=$(date -I --date '2021/01/16')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -417,6 +417,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 detected_os_id=$(cat /etc/*release | grep '^ID=' | cut -d '=' -f2- | tr -d '"')
 detected_os_id_version=$(cat /etc/*release | grep '^VERSION_ID=' | cut -d '=' -f2- | tr -d '"')
+msg i "Detected HW: $(tr -d '\0' </proc/device-tree/model)"
 msg i "Detected OS: [ $detected_os_id | $detected_os_id_version | $(${COMPATIBLE_OS_GUI} && echo 'Compatible GUI' || echo 'No GUI') ]"
 
 # Log OS Build Info
@@ -484,7 +485,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 		msg % "Removing any Old NodeJS or NPM Packages" \
 			'sudo apt-get purge -y npm nodejs'
 		msg % "Removing Un-needed Packages" \
-			'sudo apt-get autoremove -y'
+			'sudo apt-get -y autoremove'
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
@@ -493,11 +494,11 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 		msg % "Installing Node.js v10.x Package Source" \
 			'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
 		msg % "Installing Node.js v10.x via Package Manager" \
-			'sudo apt-get install nodejs -qq -y'
+			'sudo apt-get install -qq -y nodejs'
 		msg % "Installing Build Essential" \
-			'sudo apt-get install build-essential gcc g++ make -qq -y -f'
-		msg % "Installing Latest Node Package Manager (NPM)" \
-			'sudo npm install -g npm@latest'
+			'sudo apt-get install -qq -y -f build-essential gcc g++ make'
+		# msg % "Installing Latest Node Package Manager (NPM)" \
+		# 	'sudo npm install -g npm@latest'
 	fi
 fi
 
@@ -731,18 +732,35 @@ if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 
 	# Install IPtables & any other related packages
 	msg % "Install Iptables" \
-		'sudo apt-get install iptables  -qq -y -f'
+		'sudo apt-get install -qq -y -f iptables'
 	
 	# Setup IPtables Rule
 	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
+	# Detect if IPtables Rule(s) Fail to Set, if so try after reboot
+	if [[ $? -ne 0 ]]; then
+		msg ! "IPtables Setup Failed, running commands after reboot to fix"
+
+		# Create Crontab Job to Run at Next Boot, then remove its self
+		msg L "Creating crontab job to run after next reboot, then will remove itself"
+		cronjob='@reboot sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000; sudo netfilter-persistent save; sudo netfilter-persistent reload; sudo bash -c "iptables-save > /etc/iptables/rules.v4"; sudo bash -c "ip6tables-save > /etc/iptables/rules.v6"; touch /home/pi/test01.txt; sudo crontab -u root -l | grep -v "@reboot sudo iptables" | sudo crontab -u root -'
+		# (sudo crontab -u root -l; echo "${cronjob}" ) | sudo crontab -u root -
+		((sudo crontab -u root -l | grep -v '@reboot sudo iptables'); echo "${cronjob}" ) | sudo crontab -u root - >&4 2>&1
+
+		# Remove Crontab Job
+		# sudo crontab -u root -l | grep -v '@reboot sudo iptables' | sudo crontab -u root -
+
+		# Show Crontab Job
+		msg - "$(sudo crontab -u root -l)"
+	fi
+
 	# Make Iptables Persistent (silent install)
 	echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
 	echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
 	msg % "Making Iptables Persistent" \
-		'sudo apt-get install iptables-persistent -qq -y -f'
-	
+		'sudo apt-get install -qq -y -f iptables-persistent'
+
 	# How-to: Save & Reload Rules
 	#sudo netfilter-persistent save
 	#sudo netfilter-persistent reload
@@ -1222,7 +1240,7 @@ fi
 # -- Main [ Install FFMpeg from Package Manager ]  for recording mjpg-streamer streams to file, saving live streams
 # ----------------------------------------------------------------------------------------------------------------------------------
 # ## Install FFMpeg from Package Manager
-# sudo apt-get install ffmpeg -y
+# sudo apt-get install -y ffmpeg
 # 
 # 
 # ### Get Scrips
