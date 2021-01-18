@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.5
-SCRIPT_DATE=$(date -I --date '2021/01/16')
+SCRIPT_VERSION=1.1.6
+SCRIPT_DATE=$(date -I --date '2021/01/17')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -184,15 +184,6 @@ msg() {
 	esac
 }
 
-# msg h "These are test!"
-# msg p "This is a test!"
-# msg x "This is a test!"
-# msg ! "This is a test!"
-# msg i "This is a test!"
-# msg ? "This is a test!"
-# msg % "This is a test!" "sleep 6"
-
-
 # # ----------------------------------------------------------------------------------------------------------------------------------
 # # -- Function [ Calculate Whiptail Size ]  spinner animation for commands in progress. From raspi-config (MIT license)
 # # ----------------------------------------------------------------------------------------------------------------------------------
@@ -335,15 +326,16 @@ whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\
 declare whiptail_list_entry_options=(\
 	"A00 System Check" "Preform system check to insure this script is known to be compatable with this OS." "YES" \
 	"A01 System Update" "Update System Pacakages." "YES" \
-	"A02 Remove Old NodeJS & NPM Packages" "(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly." "NO" \
-	"A03 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "YES" \
-	"A04 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
-	"A05 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
-	"A06 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
-	"A07 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
-	"A08 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
-	"A09 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
+	"A02 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "YES" \
+	"A03 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
+	"A04 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
+	"A05 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
+	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
+	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
+	"A08 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
+	"A09 Install & Setup FFmpeg" "(Optional) Record MPEG Streams from MJPG-Streamer and save to file." "NO" \
 	"A10 Reboot" "(Optional) Reboot after install." "NO" \
+	"A12 Remove Old NodeJS & NPM Packages" "(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly." "NO" \
   )
 
 whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
@@ -370,7 +362,7 @@ mapfile -t main_list_entry_selected <<< "$whiptail_list_selected_descriptions"
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Menu [ CNCjs Addons Check List ]  selection of CNCjs Addons / Extentions / Pendants & Widgets
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A05' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	# Menu Checklist CNCjs Pendants & Widgets
 	whiptail_title="CNCjs Pendants & Widgets"
 	
@@ -477,11 +469,11 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup Node.js & NPM ]  via Package Manager
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A12' ]] || [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
 	msg h "Setup Node.js & NPM via Package Manager"
 	
 	# Remove Old NodeJS or NPM Packages (Optional)
-	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
+	if [[ ${main_list_entry_selected[*]} =~ 'A12' ]]; then
 		msg % "Removing any Old NodeJS or NPM Packages" \
 			'sudo apt-get purge -y npm nodejs'
 		msg % "Removing Un-needed Packages" \
@@ -489,7 +481,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 	fi
 	
 	# Install/Update Node.js & NPM via Package Manager
-	if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
+	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
 		# https://github.com/nodesource/distributions#rpminstall
 		msg % "Installing Node.js v10.x Package Source" \
 			'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
@@ -500,6 +492,8 @@ if [[ ${main_list_entry_selected[*]} =~ 'A02' ]] || [[ ${main_list_entry_selecte
 		# msg % "Installing Latest Node Package Manager (NPM)" \
 		# 	'sudo npm install -g npm@latest'
 	fi
+else
+	msg h "Node.js & NPM Information"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -520,7 +514,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Install CNCjs ]  w/ NPM
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
 	msg h "Install CNCjs"
 	
 	# Get Installed Version of CNCjs
@@ -584,8 +578,11 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 	msg h "Download & Install CNCjs Pendants & Widgets\t[ ${CNCJS_EXT_DIR} ]"
 fi 
 
+# Create Needed Directories
+if [[ ${main_list_entry_selected[*]} =~ 'A03' ]] || [[ ${main_list_entry_selected[*]} =~ 'A04' ]] || [[ ${main_list_entry_selected[*]} =~ 'A05' ]] || [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 msg % "Creating CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJS_EXT_DIR} )" \
 	"mkdir -p ${CNCJS_EXT_DIR}/watch"
+fi
 
 if [[ -n ${addons_list_entry_selected} ]]; then 	
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant TinyWeb' ]]; then
@@ -623,7 +620,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Autostart Autostart Service ]  start CNCjs on bootup w/ Systemd
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A05' ]]; then
 	msg h "Create CNCjs Service for Autostart"
 	
 	# Service
@@ -727,7 +724,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
 	msg h "Setup IPtables"
 
 	# Install IPtables & any other related packages
@@ -776,7 +773,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup Web Kiosk ]  setup web kiosk for Rasp OS, and Rasp OS Slim
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A07' ]]; then
 	msg h "Setup Web Kiosk"
 	
 	# =============================================
@@ -934,7 +931,7 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Install MJPG-Streamer & Tools ]  w/ package manager
 # ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
+if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	
 	msg h "MJPEG-Streamer Setup"
 	
@@ -1237,30 +1234,36 @@ fi
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Install FFMpeg from Package Manager ]  for recording mjpg-streamer streams to file, saving live streams
+# -- Main [ Install FFmpeg from Package Manager ]  for recording mjpg-streamer streams to file, saving live streams
 # ----------------------------------------------------------------------------------------------------------------------------------
-# ## Install FFMpeg from Package Manager
-# sudo apt-get install -y ffmpeg
-# 
-# 
-# ### Get Scrips
-# # Download Repo
-# cd /tmp
-# git clone https://github.com/cncjs/cncjs-pi-raspbian.git
-# 
-# # Copy Repo Contents
-# mkdir ~/Videos/
-# cd ~/Videos/
-# cp /tmp/cncjs-pi-raspbian/Videos/* ~/Videos/
-# chmod +x *.sh
-# 
-# 
-# ### Create CRON JOB for Streamer
-# ```
-# crontab -e
-# ### PASTE: @reboot ~/Videos/mjpg-streamer.sh start
-# ### SAVE & EXIT
-# ```
+if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
+	msg h "FFmpeg-Streamer Setup"
+
+	# Install FFMpeg from Package Manager
+	msg % "Install FFmpeg from Package Manager" \
+		"sudo apt-get install -y ffmpeg"
+
+	# Clone GIT Repository: cncjs/cncjs-pi-raspbian, if directory does not exist
+	if [ ! -d '/tmp/cncjs-pi-raspbian' ]; then
+		msg % "Cloning GIT Repository: cncjs/cncjs-pi-raspbian" \
+			"git clone https://github.com/cncjs/cncjs-pi-raspbian.git /tmp/cncjs-pi-raspbian"
+	else
+		msg i "Cloned GIT Repository: cncjs/cncjs-pi-raspbian"
+	fi
+
+	# Create Videos Direcory
+	if [ ! -d "${HOME}/Videos/" ]; then
+		msg % "Creating Videos Folder: ${HOME}/Videos/" \
+			"mkdir "${HOME}/Videos/""
+	else
+		msg i "Videos Folder: ${HOME}/Videos/"
+	fi
+
+	# Copy Video Files from Repository
+	msg % "Copy Video Scripts from Repository" \
+		"cp "/tmp/cncjs-pi-raspbian/Videos/"* "${HOME}/Videos/"; \
+		chmod +x "${HOME}/Videos/"*.sh"
+fi
 
 
 # # ----------------------------------------------------------------------------------------------------------------------------------
@@ -1283,6 +1286,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A10' ]]; then
 	msg % "Rebooting Raspberry Pi" \
 	  "sudo reboot"
 fi
+
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Finished ]  
