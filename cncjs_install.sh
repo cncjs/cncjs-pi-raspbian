@@ -990,7 +990,7 @@ EOF
 
 	# Update the Kiosk URL in the Chrome Kiosk Script
 	###KIOSK_URL=$(get_config_var KIOSK_URL "${CNCJS_EXT_DIR}/cncjs-kiosk.sh")
-	KIOSK_URL="$(whiptail --inputbox --title 'Web Kiosk URL' 'URL to open in Chrome Kiosk\nRecommended: (CNCjs "http://localhost:'${CNCJS_PORT}'") | (Camera#1 "http://localhost:8080")' 8 84 "${KIOSK_URL}" 3>&1 1>&2 2>&3)"
+	KIOSK_URL="$(whiptail --inputbox --title 'Web Kiosk URL' 'URL to open in Chrome Kiosk\nRecommended: (CNCjs "http://localhost:'${CNCJS_PORT}'") | (Camera#1 "http://localhost:8080")\n                           (Kiosk http://localhost/kiosk/)' 10 84 "${KIOSK_URL}" 3>&1 1>&2 2>&3)"
 	set_config_var KIOSK_URL "${KIOSK_URL}" "${CNCJS_EXT_DIR}/cncjs-kiosk.sh"
 	
 	# Set Chrome Kiosk Script as Executable
