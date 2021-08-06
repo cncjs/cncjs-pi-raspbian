@@ -629,12 +629,12 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 		sub="kiosk"
 		cncjs_flags+=" --mount /${sub}:${dir}"
 		msg % "Setup: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" \
-			"mkdir -p ${dir}; cat << EOF | sudo tee \"${dir}/index.html\" >/dev/null 2>&1
+			"mkdir -p ${dir}; cat > \"${dir}/index.html\" << EOF
 <!DOCTYPE html>
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
     <style>
         html {
             overflow: hidden;
@@ -648,7 +648,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 
         .bg {
             /* The image used */
-            background-image: url("http://localhost:8080/?action=stream");
+            background-image: url(\"http://localhost:8080/?action=stream\");
 
             /* Full height */
             height: 100%;
@@ -662,7 +662,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 </head>
 
 <body>
-    <div class="bg"></div>
+    <div class=\"bg\"></div>
     <p>This example creates a full page background image. Try to resize the browser window to see how it always will
         cover the full screen (when scrolled to top), and that it scales nicely on all screen sizes.</p>
 </body>
