@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.1.6
-SCRIPT_DATE=$(date -I --date '2021/01/17')
+SCRIPT_VERSION=1.2.1
+SCRIPT_DATE=$(date -I --date '2021/08/04')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -41,7 +41,8 @@ readonly HOST_IP=$(hostname -I | cut -d' ' -f1)
 SYSTEM_CHECK=true  # Preform system check to insure this script is known to be compatable with this OS
 
 CNCJS_EXT_DIR="${HOME}/.cncjs"
-cncjs_flags="--port 8000 --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
+CNCJS_PORT=80
+cncjs_flags="--port ${CNCJS_PORT} --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
 COMPATIBLE_OS_ID='raspbian'
 COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
 
@@ -330,7 +331,7 @@ declare whiptail_list_entry_options=(\
 	"A03 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
 	"A04 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
 	"A05 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
-	"A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
+	# "A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
 	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
 	"A08 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
 	"A09 Install & Setup FFmpeg" "(Optional) Record MPEG Streams from MJPG-Streamer and save to file." "NO" \
@@ -372,6 +373,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 		[Pendant TinyWeb]="https://github.com/cncjs/cncjs-pendant-tinyweb","NO" \
 		[Pendant Shopfloor Tablet]="https://github.com/cncjs/cncjs-shopfloor-tablet","YES" \
 		[Widget Boilerplate]="https://github.com/cncjs/cncjs-widget-boilerplate","NO" \
+		[Kiosk Custom Webpage]="A customizable web page at: ${CNCJS_EXT_DIR}/kiosk/index.html","NO" \
 	  )
 	
 	whiptail_list_entry_options=()
@@ -584,7 +586,10 @@ msg % "Creating CNCjs Directory for Addons / Extentions / Logs / Watch\t( ${CNCJ
 	"mkdir -p ${CNCJS_EXT_DIR}/watch"
 fi
 
+# Addons
 if [[ -n ${addons_list_entry_selected} ]]; then 	
+
+	# Addon: Pendant TinyWeb
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant TinyWeb' ]]; then
 		name="Pendant TinyWeb"
 		url="https://codeload.github.com/cncjs/cncjs-pendant-tinyweb"
@@ -596,6 +601,7 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 			"mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
+	# Addon: Pendant Shopfloor Tablet
 	if [[ ${addons_list_entry_selected[*]} =~ 'Pendant Shopfloor Tablet' ]]; then
 		name="Pendant Shopfloor Tablet"
 		url="https://codeload.github.com/cncjs/cncjs-shopfloor-tablet"
@@ -607,12 +613,60 @@ if [[ -n ${addons_list_entry_selected} ]]; then
 			"mkdir -p ${dir}; curl -sS ${url} | tar -xvzf - -C ${dir} --strip 1"
 	fi
 	
+	# Addon: Widget Boilerplate
 	if [[ ${addons_list_entry_selected[*]} =~ 'Widget Boilerplate' ]]; then
 		name="Widget Boilerplate"
 		url="https://cncjs.github.io/cncjs-widget-boilerplate/v2/"
 		sub="widget-boilerplate"
 		cncjs_flags+=" --mount /${sub}:${url}"
 		msg p "Setup: $name\t\t\t( http://${HOST_IP}/${sub} )\t( ${url} )"
+	fi
+
+	# Addon: Kiosk Custom Webpage
+	if [[ ${addons_list_entry_selected[*]} =~ 'Kiosk Custom Webpage' ]]; then
+		name="Kiosk Custom Webpage"
+		dir="${CNCJS_EXT_DIR}/kiosk"
+		sub="kiosk"
+		cncjs_flags+=" --mount /${sub}:${dir}"
+		msg % "Setup: $name\t( http://${HOST_IP}/${sub} )\t\t[ ${dir} ]" \
+			"mkdir -p ${dir}; cat << EOF | sudo tee \"${dir}/index.html\" >/dev/null 2>&1
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+            overflow: hidden;
+        }
+
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+        }
+
+        .bg {
+            /* The image used */
+            background-image: url("http://localhost:8080/?action=stream");
+
+            /* Full height */
+            height: 100%;
+
+            /* Center and scale the image nicely */
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg"></div>
+    <p>This example creates a full page background image. Try to resize the browser window to see how it always will
+        cover the full screen (when scrolled to top), and that it scales nicely on all screen sizes.</p>
+</body>
+EOF"
 	fi
 fi
 
@@ -622,7 +676,15 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A05' ]]; then
 	msg h "Create CNCjs Service for Autostart"
-	
+
+	# Load Setting if File Exists
+	if [[ -f "/etc/systemd/system/cncjs.service" ]]; then
+	    # CNCJS_PORT=$(get_config_var KIOSK_URL "/etc/systemd/system/cncjs.service")
+		CNCJS_PORT=$(sed -n "/^#/! s|.*--port \([[:digit:]]\+\).*|\1|p" "/etc/systemd/system/cncjs.service") 
+	# else
+	# 	CNCJS_PORT=80  # Defined in header
+	fi
+
 	# Service
 	msg i "Creating CNCjs Service w/ Systemd"
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -637,6 +699,7 @@ Wants=network.target
 
 [Service]
 Type=simple
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 # Restart service after x seconds if node service crashes
 Restart=on-failure
@@ -662,7 +725,7 @@ Environment="NODE_ENV=production"
 # CNCjs Parameters
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
-ExecStart=$(which cncjs) --port 8000 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watch-directory \"${HOME}/Documents\"
+ExecStart=$(which cncjs) --port 80 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watch-directory \"${HOME}/Documents\"
 
 # = Alternative Method = (EnvironmentFile)
 #EnvironmentFile=-/etc/cncjs.d/default.conf
@@ -672,6 +735,13 @@ ExecStart=$(which cncjs) --port 8000 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watc
 WantedBy=multi-user.target
 EOF
 	
+	# -----------------------------------------------------
+
+	# Update the CNCjs Port
+	KIOSK_URL="$(whiptail --inputbox --title 'CNCjs Web UI Port' 'Port to use for CNCjs Web UI (default: 80 | 8000)' 8 39 "${CNCJS_PORT}" 3>&1 1>&2 2>&3)"
+	msg % "Editing CNCjs Service Start Port" \
+		"sudo sed -i \"/^#/! s|--port [[:digit:]]\+|--port ${CNCJS_PORT}|\" \"/etc/systemd/system/cncjs.service\" "
+
 	# -----------------------------------------------------
 	
 	# Service Settings
@@ -684,7 +754,7 @@ EOF
 
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
-OPTIONS="--port 8000"
+OPTIONS="--port ${CNCJS_PORT}"
 
 EOF
 	
@@ -716,59 +786,59 @@ EOF
 		"$(sudo systemctl status cncjs)"
 
 	# Instance URL Infomation
-	msg i "CNCjs is now started and can be accessed at: ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
+	msg i "CNCjs is now started and can be accessed at: ( \e]8;;http://localhost:${CNCJS_PORT}\ahttp://localhost:${CNCJS_PORT}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:${CNCJS_PORT}\ahttp://${HOST_IP}:${CNCJS_PORT}\e]8;;\a )"
 	
 fi
 
 
-# ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
-# ----------------------------------------------------------------------------------------------------------------------------------
-if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
-	msg h "Setup IPtables"
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# # -- Main [ Setup IPtables ]  allow access to port 8000 from port 80
+# # ----------------------------------------------------------------------------------------------------------------------------------
+# if [[ ${main_list_entry_selected[*]} =~ 'A06' ]]; then
+# 	msg h "Setup IPtables"
 
-	# Install IPtables & any other related packages
-	msg % "Install Iptables" \
-		'sudo apt-get install -qq -y -f iptables'
+# 	# Install IPtables & any other related packages
+# 	msg % "Install Iptables" \
+# 		'sudo apt-get install -qq -y -f iptables'
 	
-	# Setup IPtables Rule
-	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
-		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
+# 	# Setup IPtables Rule
+# 	msg % "Setup IPtables (allow access to port 8000 from port 80)" \
+# 		'sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000'
 	
-	# Detect if IPtables Rule(s) Fail to Set, if so try after reboot
-	if [[ $? -ne 0 ]]; then
-		msg ! "IPtables Setup Failed, running commands after reboot to fix"
+# 	# Detect if IPtables Rule(s) Fail to Set, if so try after reboot
+# 	if [[ $? -ne 0 ]]; then
+# 		msg ! "IPtables Setup Failed, running commands after reboot to fix"
 
-		# Create Crontab Job to Run at Next Boot, then remove its self
-		msg L "Creating crontab job to run after next reboot, then will remove itself"
-		cronjob='@reboot sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000; sudo netfilter-persistent save; sudo netfilter-persistent reload; sudo bash -c "iptables-save > /etc/iptables/rules.v4"; sudo bash -c "ip6tables-save > /etc/iptables/rules.v6"; touch /home/pi/test01.txt; sudo crontab -u root -l | grep -v "@reboot sudo iptables" | sudo crontab -u root -'
-		# (sudo crontab -u root -l; echo "${cronjob}" ) | sudo crontab -u root -
-		((sudo crontab -u root -l | grep -v '@reboot sudo iptables'); echo "${cronjob}" ) | sudo crontab -u root - >&4 2>&1
+# 		# Create Crontab Job to Run at Next Boot, then remove its self
+# 		msg L "Creating crontab job to run after next reboot, then will remove itself"
+# 		cronjob='@reboot sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8000; sudo netfilter-persistent save; sudo netfilter-persistent reload; sudo bash -c "iptables-save > /etc/iptables/rules.v4"; sudo bash -c "ip6tables-save > /etc/iptables/rules.v6"; touch /home/pi/test01.txt; sudo crontab -u root -l | grep -v "@reboot sudo iptables" | sudo crontab -u root -'
+# 		# (sudo crontab -u root -l; echo "${cronjob}" ) | sudo crontab -u root -
+# 		((sudo crontab -u root -l | grep -v '@reboot sudo iptables'); echo "${cronjob}" ) | sudo crontab -u root - >&4 2>&1
 
-		# Remove Crontab Job
-		# sudo crontab -u root -l | grep -v '@reboot sudo iptables' | sudo crontab -u root -
+# 		# Remove Crontab Job
+# 		# sudo crontab -u root -l | grep -v '@reboot sudo iptables' | sudo crontab -u root -
 
-		# Show Crontab Job
-		msg - "$(sudo crontab -u root -l)"
-	fi
+# 		# Show Crontab Job
+# 		msg - "$(sudo crontab -u root -l)"
+# 	fi
 
-	# Make Iptables Persistent (silent install)
-	echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
-	echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
-	msg % "Making Iptables Persistent" \
-		'sudo apt-get install -qq -y -f iptables-persistent'
+# 	# Make Iptables Persistent (silent install)
+# 	echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+# 	echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+# 	msg % "Making Iptables Persistent" \
+# 		'sudo apt-get install -qq -y -f iptables-persistent'
 
-	# How-to: Save & Reload Rules
-	#sudo netfilter-persistent save
-	#sudo netfilter-persistent reload
+# 	# How-to: Save & Reload Rules
+# 	#sudo netfilter-persistent save
+# 	#sudo netfilter-persistent reload
 	
-	# How-to: Manually Save Rules
-	#sudo sh -c "iptables-save > /etc/iptables/rules.v4"
-	#sudo sh -c "ip6tables-save > /etc/iptables/rules.v6"
+# 	# How-to: Manually Save Rules
+# 	#sudo sh -c "iptables-save > /etc/iptables/rules.v4"
+# 	#sudo sh -c "ip6tables-save > /etc/iptables/rules.v6"
 	
-	# Run this if issues to reconfigure iptables-persistent
-	# sudo dpkg-reconfigure iptables-persistent
-fi
+# 	# Run this if issues to reconfigure iptables-persistent
+# 	# sudo dpkg-reconfigure iptables-persistent
+# fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # -- Main [ Setup Web Kiosk ]  setup web kiosk for Rasp OS, and Rasp OS Slim
@@ -864,8 +934,9 @@ EOF
 	# Load Setting if File Exists
 	if [[ -f "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" ]]; then
 	    KIOSK_URL=$(get_config_var KIOSK_URL "${CNCJS_EXT_DIR}/cncjs-kiosk.sh")
+		KIOSK_URL=${parameter:=http://localhost:${CNCJS_PORT}}  # Fix if varable blank
 	else
-		KIOSK_URL=http://localhost:8000
+		KIOSK_URL=http://localhost:${CNCJS_PORT}
 	fi
 
 # Output Chrome Kiosk Script
@@ -877,7 +948,7 @@ cat > "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" << 'EOF'
 #export DISPLAY=:0
 
 # URL to open in Chrome Kiosk
-KIOSK_URL=http://localhost:8000
+KIOSK_URL=http://localhost:80
 
 # Prevent the screen from turning off
 #@xscreensaver -no-splash  # comment this line out to disable screensaver
@@ -919,9 +990,8 @@ EOF
 
 	# Update the Kiosk URL in the Chrome Kiosk Script
 	###KIOSK_URL=$(get_config_var KIOSK_URL "${CNCJS_EXT_DIR}/cncjs-kiosk.sh")
-	KIOSK_URL="$(whiptail --inputbox --title 'Web Kiosk URL' 'URL to open in Chrome Kiosk' 8 39 "${KIOSK_URL}" 3>&1 1>&2 2>&3)"
+	KIOSK_URL="$(whiptail --inputbox --title 'Web Kiosk URL' 'URL to open in Chrome Kiosk\nRecommended: (CNCjs "http://localhost:'${CNCJS_PORT}'") | (Camera#1 "http://localhost:8080")' 8 84 "${KIOSK_URL}" 3>&1 1>&2 2>&3)"
 	set_config_var KIOSK_URL "${KIOSK_URL}" "${CNCJS_EXT_DIR}/cncjs-kiosk.sh"
-	###sed -i "s|KIOSK_URL=.*|KIOSK_URL=${KIOSK_URL}|" "${CNCJS_EXT_DIR}/cncjs-kiosk.sh"
 	
 	# Set Chrome Kiosk Script as Executable
 	sudo chmod a+x "${CNCJS_EXT_DIR}/cncjs-kiosk.sh"
@@ -1225,7 +1295,7 @@ EOF
 			"$(sudo systemctl status mjpg-streamer@${i})"
 		
 		# Instance URL Infomation
-		msg i "MJPEG-Streamer@${i} is now ready can be accessed at: http://localhost:808${i} | http://${HOST_IP}:808${i}"
+		msg i "MJPEG-Streamer@${i} is now ready can be accessed at: ( \e]8;;http://localhost:808${i}\ahttp://localhost:808${i}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:808${i}\ahttp://${HOST_IP}:808${i}\e]8;;\a )"
 		
 		# Increment Index
 		((i=i+1))  # let "i++"
@@ -1273,7 +1343,7 @@ fi
 # 	msg h "Starting CNCjs"
 # 	msg i "Starting CNCjs"
 # 	msg ! " └ To Stop Press (CTRL + C)"
-# 	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:8000\ahttp://${HOST_IP}:8000\e]8;;\a )"
+# 	msg i " └ ( \e]8;;http://${HOST_IP}\ahttp://${HOST_IP}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:${CNCJS_PORT}\ahttp://${HOST_IP}:${CNCJS_PORT}\e]8;;\a )"
 # 	msg - 'CNCjs Start Command' "(which cncjs) --verbose ${cncjs_flags}"
 # 	$(which cncjs) --verbose ${cncjs_flags}
 # fi
