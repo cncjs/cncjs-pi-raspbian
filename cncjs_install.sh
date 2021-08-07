@@ -1139,6 +1139,10 @@ StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=mjpg-streamer
 
+
+Environment=LD_LIBRARY_PATH="/usr/local/bin:."
+
+
 # = Option 1 = (Environment)
 # - Input Process -
 $(mjpg_streamer --input "input_uvc.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
@@ -1189,7 +1193,7 @@ EOF
 			# Menu Checklist MJPEG Streamer Camera(s)
 			whiptail_list_entry_options=()
 			whiptail_title="MJPEG Streamer Camera(s)"
-			whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\nThis install script with get you started quickly with CNCjs on a Raspberry Pi. For a more complete introduction, see the CNCjs Introduction section of the wiki page.\n\nPlease select the best options for your install needs.'
+			whiptail_message='Seletect cameras to be configured.'
 			
 			# Entry Options by ID (so they can be mapped to a particular port)
 			for dev in $(ls -1 /dev/v4l/by-id/ | grep index0); do
