@@ -951,10 +951,10 @@ cat > "${CNCJS_EXT_DIR}/cncjs-kiosk.sh" << 'EOF'
 KIOSK_URL=http://localhost:80
 
 # Prevent the screen from turning off
-#@xscreensaver -no-splash  # comment this line out to disable screensaver
-@xset -dpms
-@xset s off
-@xset s noblank
+#xscreensaver -no-splash  # comment this line out to disable screensaver
+xset -dpms     # Disable DPMS (Energy Star) features
+xset s off     # Disable screensaver
+xset s noblank # Don't blank video device
 
 # Allow quitting the X server with CTRL-ATL-Backspace
 setxkbmap -option terminate:ctrl_alt_bksp
