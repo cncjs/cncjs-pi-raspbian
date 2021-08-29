@@ -333,8 +333,8 @@ declare whiptail_list_entry_options=(\
 	"A05 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
 	# "A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
 	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
-	"A08 Install & Setup MJPG-Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage." "NO" \
-	"A09 Install & Setup FFmpeg" "(Optional) Record MPEG Streams from MJPG-Streamer and save to file." "NO" \
+	"A08 Install & Setup Streamer" "(Optional) Stream connected camera with mjpg stream to a webpage [uStreamer/MPEG-Streamer]." "NO" \
+	"A09 Install & Setup FFmpeg" "(Optional) Record MPEG Streams from MJPG streaming service and save to file." "NO" \
 	"A10 Reboot" "(Optional) Reboot after install." "NO" \
 	"A12 Remove Old NodeJS & NPM Packages" "(Optional) Remove NodeJS or NPM Packages that might have been install incorrectly." "NO" \
   )
@@ -342,7 +342,7 @@ declare whiptail_list_entry_options=(\
 whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
 
 # Present Checklist
-whiptail_list_selected_descriptions=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+whiptail_list_selected_descriptions=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 164 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
 
 main_list_entry_selected=()
 mapfile -t main_list_entry_selected <<< "$whiptail_list_selected_descriptions"
@@ -404,6 +404,37 @@ if [[ ${main_list_entry_selected[*]} =~ 'A04' ]]; then
 	# echo ${!addons_list_entry_selected[@]}
 	# echo ${#addons_list_entry_selected[@]}
 	# echo " - - - - - - - - "
+fi
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# -- Menu [ Install & Setup Video Streamer Menu ]  selection of ( MPEG-Streamer | uStreamer )
+# ----------------------------------------------------------------------------------------------------------------------------------
+if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
+	# Menu Checklist CNCjs Pendants & Widgets
+	whiptail_title="Video Streamer Options"
+	
+	whiptail_message='Video Streamer Options.\n\nPlease select which MPEG Streamer you would like to install:'
+	
+	declare -A whiptail_list_options=(\
+		[uStreamer]="Newer lightweight and fast mpeg streamer. | https://github.com/pikvm/ustreamer" \
+		[MPEG-Streamer]="legacy mpeg streamer. | https://github.com/jacksonliam/mjpg-streamer" \
+	  )
+	
+	whiptail_list_entry_options=()
+	whiptail_list_entry_count=${#whiptail_list_options[@]}
+	
+	for entry in "${!whiptail_list_options[@]}"; do
+		# echo "TESTING: whiptail_list_options[$entry]}:${whiptail_list_options[$entry]} | entry:$entry | ### $(echo ${whiptail_list_options[$entry]} | cut -d',' -f2)"
+		whiptail_list_entry_options+=("$entry")
+		whiptail_list_entry_options+=("$(echo ${whiptail_list_options[$entry]} | cut -d',' -f1)")
+	done
+	
+	# Present Checklist
+	whiptail_list_selected_descriptions=$(whiptail --menu --title "${whiptail_title}" "${whiptail_message}" --default-item "uStreamer" 12 100 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+	
+	streamer_list_entry_selected=()
+	mapfile -t streamer_list_entry_selected <<< "$whiptail_list_selected_descriptions"
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -999,9 +1030,270 @@ fi
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
-# -- Main [ Install MJPG-Streamer & Tools ]  w/ package manager
+# -- Main [ Install ustreamer & Tools ]  w/ package manager
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
+	
+	# uStreamer --------------------------------------------------------------------------------------------------------------------
+	if [[ ${streamer_list_entry_selected[*]} =~ 'uStreamer' ]]; then
+		msg h "uStreamer Setup"
+		
+		msg % "Installing Build Tools & Dependencies" \
+			'sudo apt-get install -qq -y build-essential libevent-dev libjpeg8-dev libbsd-dev libv4l-dev cmake git'
+		msg % "Building & Installing Latest µStreamer from GIT Repository" \
+			'cd /tmp; git clone --depth=1 https://github.com/pikvm/ustreamer; cd ustreamer; make; sudo make install'
+		
+		# Create System Account for ustreamer process
+		SERVICE_ACCOUNT=ustreamer
+		msg % "Creating System Account (${SERVICE_ACCOUNT}) for ustreamer process" \
+			"[ ! $(getent passwd ${SERVICE_ACCOUNT}) ] && sudo useradd --system ${SERVICE_ACCOUNT} || echo 'User Already Exist'"
+		msg % "Adding System Account (${SERVICE_ACCOUNT}) to (video) group" \
+			"[ ! $(user=${SERVICE_ACCOUNT}; group=video; getent group ${group} | grep "\b${user}\b") ] && sudo usermod --append --group video ${SERVICE_ACCOUNT} || echo 'User Already Member of Group'"
+		msg %% "Granting System Account (${SERVICE_ACCOUNT}) access to video devices" \
+			"sudo usermod -a -G video ${SERVICE_ACCOUNT}"
+
+		# -----------------------------------------------------
+
+		# Main Service
+		msg i "Creating uStreamerService"
+		# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+		cat << EOF | sudo tee "/lib/systemd/system/ustreamer.service" >/dev/null 2>&1
+[Unit]
+Description=uStreamer Service | µStreamer is a lightweight and very quick server to stream MJPG video from any V4L2 device to the net. All new browsers have native support of this video format, as well as most video players such as mplayer, VLC etc. µStreamer is a part of the Pi-KVM project designed to stream VGA and HDMI screencast hardware data with the highest resolution and FPS possible.
+Documentation=https://github.com/pikvm/ustreamer
+After=syslog.target
+After=network.target
+Wants=network.target
+
+
+[Service]
+Type=simple
+
+# Process Priority
+Nice=+10
+
+# Restart service after x seconds if node service crashes
+Restart=always
+RestartSec=5
+
+# User & Group
+User=ustreamer
+Group=video
+
+# Capabilities & Security Settings
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ProtectHome=true
+ProtectSystem=full
+
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=uStreamer
+
+# uStreamer Info
+$(ustreamer --help | grep .  | sed '1d;$d' | sed 's/^/# /')
+# ustreamer --help"
+
+# = Start Process =
+ExecStart=/usr/local/bin/ustreamer --device=/dev/video0 --host=0.0.0.0 --port=8080 --quality 80 --resolution 640x480 --format=MJPEG --desired-fps=15
+
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+		# -----------------------------------------------------
+
+		# Create Template Service
+		msg i "Creating uStreamer Service Template"
+		# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+		cat << EOF | sudo tee "/lib/systemd/system/ustreamer@.service" >/dev/null 2>&1
+[Unit]
+Description="uStreamer Service Instance: %I | Default Device: /dev/video%i | Default Port: 808%i"
+Documentation=https://github.com/pikvm/ustreamer
+After=syslog.target
+After=network.target
+Wants=network.target
+
+
+[Service]
+Type=simple
+
+# Process Priority
+Nice=+10
+
+# Restart service after x seconds if node service crashes
+Restart=always
+RestartSec=5
+
+# User & Group
+User=ustreamer
+Group=video
+
+# Capabilities & Security Settings
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ProtectHome=true
+ProtectSystem=full
+
+# Output to syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=uStreamer
+
+# uStreamer Info
+$(ustreamer --help | grep .  | sed '1d;$d' | sed 's/^/# /')
+# ustreamer --help"
+
+# = Start Process =
+Environment="SCRIPT_ARGS=%I"
+ExecStart=/usr/local/bin/ustreamer --process-name-prefix ustreamer-%I --host=0.0.0.0 --port=808%I --quality 80 --device=/dev/video%I --resolution 640x480 --desired-fps=15
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+		# -----------------------------------------------------
+		
+		# Reload Services
+		msg % "Reloading Service Deamon" \
+			"sudo systemctl daemon-reload"
+		
+		# =====================================================
+		
+		# Check if Camera's Avalible 
+		if [[ -e "/dev/video0" ]]; then
+			
+			# Menu uStreamer Setup
+			whiptail_title="uStreamer Camera Options"
+			whiptail_message="µStreamer is a lightweight and very quick server to stream MJPG video from any V4L2 device to the net. All new browsers have native support of this video format, as well as most video players such as mplayer, VLC etc. µStreamer is a part of the Pi-KVM project designed to stream VGA and HDMI screencast hardware data with the highest resolution and FPS possible.\n\nStream JPEG files over an IP-based network from a webcam to various types of viewers such as Chrome, Firefox, Cambozola, VLC, mplayer, and other software capable of receiving MJPG streams\n\nWould you like MJPG Stream setup for any one camera you plug in. This makes using a camera very easy. Just plug any camera in and it will work.\n\nAlternatively, if you plan to plugin muluple camera's at once and want seperate streams for each camera. This script can setup seperate streams where each stream has a camera assisgend to it by device ID. This way the streams do not change on reboot.\nHowever, new cameras will require changing ID. You can do that by just reruning this script."
+			
+			whiptail_menu_entry_selected=$(whiptail --menu --backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" --nocancel --ok-button "Setup Camera(s)" --title "${whiptail_title}" "${whiptail_message}" 24 78 2 \
+				"Single Camera" "  Setup uStreamer for a single camera on /dev/video0" \
+				"Multiple Cameras" "  Setup uStreamer cameras based on /dev/v4l/by-id/*" 3>&1 1>&2 2>&3)
+			
+			
+			# uStreamer Single/Multi Camera Setup
+			if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
+				msg h "uStreamer Multi Camera Setup"
+				
+				# Menu Checklist uStreamer Camera(s)
+				whiptail_list_entry_options=()
+				whiptail_title="uStreamer Camera(s)"
+				whiptail_message='Seletect cameras to be configured.'
+				
+				# Entry Options by ID (so they can be mapped to a particular port)
+				for dev in $(ls -1 /dev/v4l/by-id/ | grep index0); do
+					whiptail_list_entry_options+=("$dev")
+					whiptail_list_entry_options+=("Device by ID")
+					whiptail_list_entry_options+=("ON")
+				done
+				
+				# Present Checklist
+				whiptail_list_entry_count=$((${#whiptail_list_entry_options[@]} / 3 ))
+				whiptail_list_entry_selected=$(whiptail --checklist --separate-output --title "${whiptail_title}" "${whiptail_message}" 20 150 $whiptail_list_entry_count -- "${whiptail_list_entry_options[@]}" 3>&1 1>&2 2>&3)
+				
+			else # [[ ${whiptail_menu_entry_selected[*]} =~ 'Single' ]]; then
+				msg h "uStreamer Single Camera Setup"
+				whiptail_list_entry_selected+=("/dev/video0")
+			fi
+		else 
+			msg ! "No Camera Detected, setting up for single camera operation."
+			msg h "uStreamer Single Camera Setup"
+			whiptail_list_entry_selected+=("/dev/video0")
+		fi
+			
+		# Process Selections
+		i=0  # Instance Counter
+		mapfile -t list_entry_selected <<< "${whiptail_list_entry_selected}"
+		for entry_selected in "${list_entry_selected[@]}"; do
+			
+			# Add Path to Camera Devices based on selection
+			if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
+				# Multiple Device by ID
+				camera_device="/dev/v4l/by-id/${list_entry_selected}"
+			else 
+				# Single Device by ID
+				camera_device="${list_entry_selected}"
+			fi
+			
+			# Detect if camera exist, then promt for customisations
+			if [[ -e "${camera_device}" ]]; then
+				
+				# Camera Resolution Get Options
+				whiptail_list_entry_resolution=()
+				for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP "[[:digit:]]+x[[:digit:]]+" | sort -nr | uniq); do
+					whiptail_list_entry_resolution+=("$entry"  "Resolution")
+				done
+				
+				# Camera Resolution Menu
+				camera_resolution=$(whiptail --menu --title "uStreamer Camera(s) Resolution" \
+				"Select Camera Resolution for Camera: \n${camera_device}\n\nThe lower the resolution the less proccessing power required. Lower resolutions are recommeneded." \
+				--nocancel --ok-button "Apply" \
+				--backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" \
+				18 84 6 \
+				"${whiptail_list_entry_resolution[@]}" 3>&1 1>&2 2>&3)
+				
+				# Camera FPS Get Options
+				whiptail_list_entry_fps=()
+				for entry in $(v4l2-ctl --list-formats-ext --device "${camera_device}" | grep -oP '\(\K(\d+)(?=.*fps)' | sort -n | uniq); do
+					whiptail_list_entry_fps+=("$entry"  "FPS")
+				done
+				
+				# Camera FPS Menu
+				camera_fps=$(whiptail --menu --title "uStreamer Camera(s) FPS" \
+				"Select Camera Frame Per Second (FPS) for Camera: \n${camera_device}\n\nThe lower the FPS the less proccessing power required. Lower FPS are recommeneded." \
+				--nocancel --ok-button "Apply" \
+				--backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" \
+				18 84 6 \
+				"${whiptail_list_entry_fps[@]}" 3>&1 1>&2 2>&3)
+				
+				# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
+				msg i "uStreamer Service Instance: ustreamer@${i} | ${list_entry_selected}"
+				msg % "Creating uStreamer Service Instance: ustreamer@${i}" \
+					"sudo cp --update \"/lib/systemd/system/ustreamer@.service\" \"/etc/systemd/system/ustreamer@${i}.service\";
+					sudo sed -i '/^ExecStart/{s|--device=[a-zA-Z0-9_\-\%\\/\]*|--device=${camera_device}|}' \"/etc/systemd/system/ustreamer@${i}.service\";
+					sudo sed -i '/^ExecStart/{s|--desired-fps=\\w*|--desired-fps=${camera_fps}|}' \"/etc/systemd/system/ustreamer@${i}.service\";
+					sudo sed -i '/^ExecStart/{s|--resolution\\s\+\\w*|--resolution ${camera_resolution}|}' \"/etc/systemd/system/ustreamer@${i}.service\" "
+			else 
+				msg ! "Camera NOT Detected, default settings will be used for camera: ${camera_device}"
+				
+				# Copy Instance from Template to /etc to take priorty over template, then make needed changes to service file.
+				msg i "uStreamer Service Instance: ustreamer@${i} | ${list_entry_selected}"
+				msg % "Creating uStreamer Service Instance: ustreamer@${i}" \
+					"sudo cp --update \"/lib/systemd/system/ustreamer@.service\" \"/etc/systemd/system/ustreamer@${i}.service\" "
+			fi
+			
+			# Outputing Instance Infomation
+			msg - "Service Instance Settings: ustreamer@${i} | /etc/systemd/system/ustreamer@${i}.service" \
+				"$(grep "^ExecStart=" "/etc/systemd/system/ustreamer@${i}.service")
+				\n    Note: These settings can be changed with command: sudo systemctl edit --full ustreamer@${i}"
+			
+			# Reload Services
+			msg % "Reloading Service Deamon" \
+				"sudo systemctl daemon-reload"
+			
+			# Instance Start
+			msg % "Starting Service Instance Settings: ustreamer@${i}" \
+				"sudo systemctl restart ustreamer@${i}"
+				
+			# Instance Start
+			msg % "Enabling Service Instance Settings: ustreamer@${i}" \
+				"sudo systemctl enable ustreamer@${i}"
+			
+			# Instance Status
+			msg - "Status of Service Instance: ustreamer@${i}" \
+				"$(sudo systemctl status ustreamer@${i})"
+			
+			# Instance URL Infomation
+			msg i "uStreamer@${i} is now ready can be accessed at: ( \e]8;;http://localhost:808${i}\ahttp://localhost:808${i}\e]8;;\a ) | ( \e]8;;http://${HOST_IP}:808${i}\ahttp://${HOST_IP}:808${i}\e]8;;\a )"
+			
+			# Increment Index
+			((i=i+1))  # let "i++"
+		done
+
+
+	# MJPEG-Streamer ---------------------------------------------------------------------------------------------------------------
+	elif [[ ${streamer_list_entry_selected[*]} =~ 'MPEG-Streamer' ]]; then
 	
 	msg h "MJPEG-Streamer Setup"
 	
@@ -1139,10 +1431,6 @@ StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=mjpg-streamer
 
-
-Environment=LD_LIBRARY_PATH="/usr/local/bin:."
-
-
 # = Option 1 = (Environment)
 # - Input Process -
 $(mjpg_streamer --input "input_uvc.so --help" 3>&1 1>&2 2>&3 | grep .  | sed '1d;$d' | sed 's/^/#/')
@@ -1243,7 +1531,7 @@ EOF
 			camera_resolution=$(whiptail --menu --title "MJPEG Streamer Camera(s) Resolution" \
 			"Select Camera Resolution for Camera: \n${camera_device}\n\nThe lower the resolution the less proccessing power required. Lower resolutions are recommeneded." \
 			--nocancel --ok-button "Apply" \
-			--backtitle "JBDKSJFJKSDHF" \
+			--backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" \
 			18 84 6 \
 			"${whiptail_list_entry_resolution[@]}" 3>&1 1>&2 2>&3)
 			
@@ -1257,7 +1545,7 @@ EOF
 			camera_fps=$(whiptail --menu --title "MJPEG Streamer Camera(s) FPS" \
 			"Select Camera Frame Per Second (FPS) for Camera: \n${camera_device}\n\nThe lower the FPS the less proccessing power required. Lower FPS are recommeneded." \
 			--nocancel --ok-button "Apply" \
-			--backtitle "JBDKSJFJKSDHF" \
+			--backtitle "${SCRIPT_TITLE_FULL}  |  To ABORT at anytime, press 'ESC' or 'CTRL + C'" \
 			18 84 6 \
 			"${whiptail_list_entry_fps[@]}" 3>&1 1>&2 2>&3)
 			
@@ -1304,6 +1592,7 @@ EOF
 		# Increment Index
 		((i=i+1))  # let "i++"
 	done
+fi
 fi
 
 
