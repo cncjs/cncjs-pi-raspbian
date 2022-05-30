@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.3.0
-SCRIPT_DATE=$(date -I --date '2021/08/16')
+SCRIPT_VERSION=1.4.0
+SCRIPT_DATE=$(date -I --date '2022/05/29')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -43,8 +43,8 @@ SYSTEM_CHECK=true  # Preform system check to insure this script is known to be c
 CNCJS_EXT_DIR="${HOME}/.cncjs"
 CNCJS_PORT=80
 cncjs_flags="--port ${CNCJS_PORT} --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
-COMPATIBLE_OS_ID='raspbian'
-COMPATIBLE_OS_ID_VERSION=10  # greater than or equal
+COMPATIBLE_OS_ID='^(rasp|de)bian$'
+COMPATIBLE_OS_ID_VERSION=11  # greater than or equal
 
 # Detect Compatible GUI
 [[ $(dpkg -l|egrep -i "(lxde|openbox)" | grep -v library) ]] && COMPATIBLE_OS_GUI=true || COMPATIBLE_OS_GUI=false
@@ -474,7 +474,7 @@ esac
 
 # Check Compatability
 if [[ ${SYSTEM_CHECK} == true ]] && [[ ${main_list_entry_selected[*]} =~ "A00" ]] ; then
-	if [[ "$detected_os_id" == "$COMPATIBLE_OS_ID" ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
+	if [[ "$detected_os_id" =~ $COMPATIBLE_OS_ID ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
 		msg p "Detected OS is compatable with this install script."
 	else
 		msg p "Detected OS is NOT compatable with this install script!"
@@ -515,11 +515,21 @@ if [[ ${main_list_entry_selected[*]} =~ 'A12' ]] || [[ ${main_list_entry_selecte
 	
 	# Install/Update Node.js & NPM via Package Manager
 	if [[ ${main_list_entry_selected[*]} =~ 'A02' ]]; then
-		# https://github.com/nodesource/distributions#rpminstall
-		msg % "Installing Node.js v10.x Package Source" \
-			'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
-		msg % "Installing Node.js v10.x via Package Manager" \
-			'sudo apt-get install -qq -y nodejs'
+	
+		# Raspbian / Debian Spasific Install
+		if [[ "$detected_os_id" == 'raspbian' ]] && [[ $detected_os_id_version -le 10 ]]; then
+			# Raspbian 10 (and older)
+			# https://github.com/nodesource/distributions#rpminstall
+			msg % "Installing Node.js v10.x Package Source" \
+				'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
+			msg % "Installing Node.js v10.x via Package Manager" \
+				'sudo apt-get install -qq -y nodejs'
+		else
+			# Debain
+			msg % "Installing Node.js & NPM via Package Manager" \
+				'sudo apt-get install -qq -y nodejs npm'
+		fi
+
 		msg % "Installing Build Essential" \
 			'sudo apt-get install -qq -y -f build-essential gcc g++ make'
 		# msg % "Installing Latest Node Package Manager (NPM)" \
@@ -1038,8 +1048,16 @@ if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	if [[ ${streamer_list_entry_selected[*]} =~ 'uStreamer' ]]; then
 		msg h "uStreamer Setup"
 		
-		msg % "Installing Build Tools & Dependencies" \
-			'sudo apt-get install -qq -y build-essential libevent-dev libjpeg8-dev libbsd-dev libv4l-dev cmake git'
+		# Raspbian / Debian Spasific Install
+		if [[ "$detected_os_id" == 'raspbian' ]] && [[ $detected_os_id_version -le 10 ]]; then
+			# Raspbian 10 (and older)
+			msg % "Installing Build Tools & Dependencies (Raspbian)" \
+				'sudo apt-get install -qq -y build-essential libevent-dev libjpeg8-dev libbsd-dev libv4l-dev cmake git'
+		else
+			# Debain
+			msg % "Installing Build Tools & Dependencies (Raspbian)" \
+				'sudo apt-get install -qq -y build-essential libevent-dev libjpeg-dev libbsd-dev libv4l-dev cmake git'
+		fi
 		msg % "Building & Installing Latest µStreamer from GIT Repository" \
 			'cd /tmp; git clone --depth=1 https://github.com/pikvm/ustreamer; cd ustreamer; make; sudo make install'
 		
@@ -1611,7 +1629,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 		msg % "Cloning GIT Repository: cncjs/cncjs-pi-raspbian" \
 			"git clone https://github.com/cncjs/cncjs-pi-raspbian.git /tmp/cncjs-pi-raspbian"
 	else
-		msg i "Cloned GIT Repository: cncjs/cncjs-pi-raspbian"
+		msg i "Cloned GIT Repository: cncjs/cncjs-pi-raspbian to /tmp/cncjs-pi-raspbian"
 	fi
 
 	# Create Videos Direcory
@@ -1624,7 +1642,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A09' ]]; then
 
 	# Copy Video Files from Repository
 	msg % "Copy Video Scripts from Repository" \
-		"cp "/tmp/cncjs-pi-raspbian/Videos/"* "${HOME}/Videos/"; \
+		"cp "/tmp/cncjs-pi-raspbian/accessories/video/"* "${HOME}/Videos/"; \
 		chmod +x "${HOME}/Videos/"*.sh"
 fi
 

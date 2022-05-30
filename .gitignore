@@ -8,3 +8,6 @@ ehthumbs.db
 Thumbs.db
 .log
 *.code-workspace
+_h5ai/*
+*.htaccess
+notes.internal.sh
