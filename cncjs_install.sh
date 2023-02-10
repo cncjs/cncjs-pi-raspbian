@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.0
-SCRIPT_DATE=$(date -I --date '2022/05/29')
+SCRIPT_VERSION=1.4.1
+SCRIPT_DATE=$(date -I --date '2023/02/09')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -72,11 +72,11 @@ COL_CYAN='\e[1;36m'
 COL_WHITE='\e[1;37m'
 
 # Message
-PASS="[${COL_GREEN}✓${COL_NC}]"
-FAIL="[${COL_RED}✗${COL_NC}]"
-WARN="[${COL_YELLOW}"'!'"${COL_NC}]"
-INFO="[${COL_CYAN}i${COL_NC}]"
-QSTN="[${COL_MAGENTA}?${COL_NC}]"
+PASS="${COL_NC}[${COL_GREEN}✓${COL_NC}]"
+FAIL="${COL_NC}[${COL_RED}✗${COL_NC}]"
+WARN="${COL_NC}[${COL_YELLOW}"'!'"${COL_NC}]"
+INFO="${COL_NC}[${COL_CYAN}i${COL_NC}]"
+QSTN="${COL_NC}[${COL_MAGENTA}?${COL_NC}]"
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -443,7 +443,11 @@ fi
 detected_os_id=$(cat /etc/*release | grep '^ID=' | cut -d '=' -f2- | tr -d '"')
 detected_os_id_version=$(cat /etc/*release | grep '^VERSION_ID=' | cut -d '=' -f2- | tr -d '"')
 msg i "Detected HW: $(tr -d '\0' </proc/device-tree/model)"
-msg i "Detected OS: [ $detected_os_id | $detected_os_id_version | $(${COMPATIBLE_OS_GUI} && echo 'Compatible GUI' || echo 'No GUI') ]"
+msg i "Detected OS: [\
+  $([[ "$detected_os_id" =~ $COMPATIBLE_OS_ID ]] && echo -e ${PASS}${COL_NC} || echo -e ${FAIL}${COL_NC}) $detected_os_id  |\
+  $([[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]] && echo -e ${PASS}${COL_NC} || echo -e ${FAIL}${COL_NC}) $detected_os_id_version  |\
+  $(${COMPATIBLE_OS_GUI} && echo -e ${PASS}${COL_NC} 'Compatible GUI' || echo -e ${WARN}${COL_NC} 'No GUI (or) Incompatable GUI')  \
+]"
 
 # Log OS Build Info
 echo "Raspberry Pi OS Image Version" >&4
@@ -477,8 +481,8 @@ if [[ ${SYSTEM_CHECK} == true ]] && [[ ${main_list_entry_selected[*]} =~ "A00" ]
 	if [[ "$detected_os_id" =~ $COMPATIBLE_OS_ID ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
 		msg p "Detected OS is compatable with this install script."
 	else
-		msg p "Detected OS is NOT compatable with this install script!"
-		msg i "This installer is designed for the [Raspberry Pi](https://www.raspberrypi.org)"
+		msg x "Detected OS is NOT compatable with this install script!"
+		msg i "This installer is designed for the [Raspberry Pi](https://www.raspberrypi.org) | ${COMPATIBLE_OS_ID} >= v${COMPATIBLE_OS_ID_VERSION}"
 		exit 1;
 	fi
 else
