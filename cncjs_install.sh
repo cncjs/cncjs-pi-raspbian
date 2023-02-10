@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.3
-SCRIPT_DATE=$(date -I --date '2023/02/09')
+SCRIPT_VERSION=1.4.4
+SCRIPT_DATE=$(date -I --date '2023/02/10')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -566,7 +566,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A03' ]]; then
 	
 	# Get Installed Version of CNCjs
 	if [[ $(command -v cncjs) ]]; then
-		CNCJS_VERSION_INSTALLED=$(cncjs -V)  # $(npm view cncjs version)
+		CNCJS_VERSION_INSTALLED=$(npm view cncjs version)  # cncjs --version
 	else
 		CNCJS_VERSION_INSTALLED=0
 	fi
