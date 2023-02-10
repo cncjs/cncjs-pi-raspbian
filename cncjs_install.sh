@@ -15,7 +15,7 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.1
+SCRIPT_VERSION=1.4.2
 SCRIPT_DATE=$(date -I --date '2023/02/09')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
@@ -526,7 +526,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A12' ]] || [[ ${main_list_entry_selecte
 			# https://github.com/nodesource/distributions#rpminstall
 			msg % "Installing Node.js v10.x Package Source" \
 				'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
-			msg % "Installing Node.js v10.x via Package Manager" \
+			msg % "Installing Node.js via Package Manager" \
 				'sudo apt-get install -qq -y nodejs'
 		else
 			# Debain
@@ -1232,7 +1232,7 @@ EOF
 			# Add Path to Camera Devices based on selection
 			if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
 				# Multiple Device by ID
-				camera_device="/dev/v4l/by-id/${list_entry_selected}"
+				camera_device="/dev/v4l/by-id/${entry_selected}"
 			else 
 				# Single Device by ID
 				camera_device="${list_entry_selected}"
@@ -1534,7 +1534,7 @@ EOF
 		# Add Path to Camera Devices based on selection
 		if [[ ${whiptail_menu_entry_selected[*]} =~ 'Multiple' ]]; then
 			# Multiple Device by ID
-			camera_device="/dev/v4l/by-id/${list_entry_selected}"
+			camera_device="/dev/v4l/by-id/${entry_selected}"
 		else 
 			# Single Device by ID
 			camera_device="${list_entry_selected}"
