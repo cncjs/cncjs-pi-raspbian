@@ -15,7 +15,7 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.2
+SCRIPT_VERSION=1.4.3
 SCRIPT_DATE=$(date -I --date '2023/02/09')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
@@ -85,7 +85,7 @@ QSTN="${COL_NC}[${COL_MAGENTA}?${COL_NC}]"
 # https://unix.stackexchange.com/questions/225179/display-spinner-while-waiting-for-some-process-to-finish
 # https://wiki.tcl-lang.org/page/Text+Spinner
 function spinner() {
-	# make sure we use non-unicode character type locale 
+	# make sure we use non-unicode character type local
 	# (that way it works for any locale as long as the font supports the characters)
 	local LC_CTYPE=C
 	
@@ -756,7 +756,7 @@ User=${USER}
 WorkingDirectory=${HOME}
 
 # Capabilities & Security Settings
-CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_BIND_SERVICE  # Commment this out if you want CNCjs to be able to run "sudo" commands.
 # ProtectHome=true
 ProtectSystem=full
 
@@ -1047,6 +1047,9 @@ fi
 # -- Main [ Install ustreamer & Tools ]  w/ package manager
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
+	
+	# Note to users regarding camera hardware issues.
+	msg i "NOTE: If you happen to experience camera issues, try reducing frame rate and/or resolution. https://github.com/pikvm/ustreamer/issues/14#issuecomment-583172852"
 	
 	# uStreamer --------------------------------------------------------------------------------------------------------------------
 	if [[ ${streamer_list_entry_selected[*]} =~ 'uStreamer' ]]; then
