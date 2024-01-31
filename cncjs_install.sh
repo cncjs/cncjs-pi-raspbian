@@ -42,7 +42,7 @@ SYSTEM_CHECK=true  # Preform system check to insure this script is known to be c
 
 CNCJS_EXT_DIR="${HOME}/.cncjs"
 CNCJS_PORT=80
-cncjs_flags="--port ${CNCJS_PORT} --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
+cncjs_flags="--port ${CNCJS_PORT} --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
 COMPATIBLE_OS_ID='^(rasp|de)bian$'
 COMPATIBLE_OS_ID_VERSION=11  # greater than or equal
 
@@ -770,7 +770,7 @@ Environment="NODE_ENV=production"
 # CNCjs Parameters
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
-ExecStart=$(which cncjs) --port 80 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watch-directory \"${HOME}/Documents\"
+ExecStart=$(which cncjs) --port 80 --watch-directory \"${HOME}/Documents\"
 
 # = Alternative Method = (EnvironmentFile)
 #EnvironmentFile=-/etc/cncjs.d/default.conf
