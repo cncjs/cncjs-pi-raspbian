@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.4
-SCRIPT_DATE=$(date -I --date '2023/02/10')
+SCRIPT_VERSION=1.4.6
+SCRIPT_DATE=$(date -I --date '2024/07/10')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -50,12 +50,11 @@ COMPATIBLE_OS_ID_VERSION=11  # greater than or equal
 [[ $(dpkg -l|egrep -i "(lxde|openbox)" | grep -v library) ]] && COMPATIBLE_OS_GUI=true || COMPATIBLE_OS_GUI=false
 
 # ----------------------------------------------------------------------------------------------------------------------------------
-# -- [ Logging ]  log hidden output to syslog for use in debugging
+# -- [ Logging ]  log hidden output to journal for use in debugging
 # ----------------------------------------------------------------------------------------------------------------------------------
-# https://www.urbanautomaton.com/blog/2014/09/09/redirecting-bash-script-output-to-syslog/
-# Sends stdout output to syslog.
-# To Use/View Syslog, use command: tail -f -n 50 /var/log/syslog
-exec 4> >(logger -t $(basename $0))
+# Sends stdout output to journal.
+# To Use/View Journal, use command: journalctl --identifier=cncjs --identifier=cncjs_installer --lines=50 --follow --pager-end
+exec 4> >(logger -t cncjs_installer)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -89,7 +88,7 @@ function spinner() {
 	# (that way it works for any locale as long as the font supports the characters)
 	local LC_CTYPE=C
 	
-	local spin_chars=' ⣾ ⣽ ⣻ ⢿ ⡿ ⣟ ⣯ ⣷ '
+	local spin_chars=' ⣷ ⣯ ⣟ ⡿ ⢿ ⣻ ⣽ ⣾ '
 	
 	local pid=$1 # Process Id of the previous running command
 	tput civis  # cursor invisible
@@ -113,8 +112,8 @@ function spinner() {
 # -- Function [ Message ]  message formatter, also used for passing commands.
 # ----------------------------------------------------------------------------------------------------------------------------------
 msg() {
-	# Logging to syslog
-	logger -p user.notice -t $SCRIPT_NAME "$2"
+	# Logging to journal
+	logger -p user.notice -t cncjs_installer "$2"
 	
 	# User Output
 	case $1 in
@@ -155,7 +154,7 @@ msg() {
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
 				echo -e "   └── Try to re-run this part of the script after rebooting."
-				msg - "Latest Syslog Entries" "$(tail -n 6 /var/log/syslog)"
+				msg - "Latest Journal Entries" "$(journalctl -n 6 --no-pager)"
 			fi
 			
 			# Return Error Code
@@ -173,7 +172,7 @@ msg() {
 			else 
 				echo -ne "\r  ${FAIL} ${COL_RED} ${2} ${COL_GREY}|${COL_YELLOW} Error Code: ${ERROR_CODE} ${COL_NC} \n";
 				echo -e "└── Try to re-run this part of the script after rebooting."
-				msg - "Latest Syslog Entries" "$(tail -n 6 /var/log/syslog)"
+				msg - "Latest Journal Entries" "$(tail -n 6 /var/log/journal)"
 			fi
 			
 			# Return Error Code
@@ -285,7 +284,7 @@ echo -e "${COL_BLACK}${SCRIPT_TITLE_FULL}${COL_NC}
    
   CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.
   For a more complete introduction, see the Introduction section of the wiki page ( \e]8;;https://github.com/cncjs/cncjs/wiki/Introduction\ahttps://github.com/cncjs/cncjs/wiki/Introduction\e]8;;\a ).
-  ${COL_GREY}NOTE: This installer logs to syslog. You can view the syslog, with terminal command: tail -f -n 50 /var/log/syslog ${COL_NC}
+  ${COL_GREY}NOTE: This installer logs to journal. You can view the journal, with terminal command: journalctl --identifier=cncjs --identifier=cncjs_installer --lines=50 --follow --pager-end ${COL_NC}
   ${COL_WHITE}==========================================================================${COL_NC}"
   
   # Log Infomation
@@ -524,8 +523,10 @@ if [[ ${main_list_entry_selected[*]} =~ 'A12' ]] || [[ ${main_list_entry_selecte
 		if [[ "$detected_os_id" == 'raspbian' ]] && [[ $detected_os_id_version -le 10 ]]; then
 			# Raspbian 10 (and older)
 			# https://github.com/nodesource/distributions#rpminstall
-			msg % "Installing Node.js v10.x Package Source" \
-				'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
+			# msg % "Installing Node.js v10.x Package Source" \
+			# 	'curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -'
+			msg % "Installing Node.js v16.x Package Source" \
+				'curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -'
 			msg % "Installing Node.js via Package Manager" \
 				'sudo apt-get install -qq -y nodejs'
 		else
@@ -534,10 +535,12 @@ if [[ ${main_list_entry_selected[*]} =~ 'A12' ]] || [[ ${main_list_entry_selecte
 				'sudo apt-get install -qq -y nodejs npm'
 		fi
 
-		msg % "Installing Build Essential" \
+		msg % "Installing Build Essentials" \
 			'sudo apt-get install -qq -y -f build-essential gcc g++ make'
-		# msg % "Installing Latest Node Package Manager (NPM)" \
+
+		# msg % "Installing Latest Stable Nodejs and Node Package Manager (NPM)" \
 		# 	'sudo npm install -g npm@latest'
+		#	'sudo npm cache clean -f; sudo npm install -g n; sudo n stable'
 	fi
 else
 	msg h "Node.js & NPM Information"
@@ -737,7 +740,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A05' ]]; then
 [Unit]
 Description=CNCjs is a full-featured web-based interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.
 Documentation=https://github.com/cncjs/cncjs
-After=syslog.target
+After=basic.target
 After=network.target
 Wants=network.target
 
@@ -760,9 +763,9 @@ CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_BIND_SERVICE  # Commment this out if
 # ProtectHome=true
 ProtectSystem=full
 
-# Output to syslog
-StandardOutput=syslog
-StandardError=syslog
+# Output to journal
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=cncjs
 
 # = Start Process =
@@ -1048,13 +1051,13 @@ fi
 # ----------------------------------------------------------------------------------------------------------------------------------
 if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 	
-	# Note to users regarding camera hardware issues.
-	msg i "NOTE: If you happen to experience camera issues, try reducing frame rate and/or resolution. https://github.com/pikvm/ustreamer/issues/14#issuecomment-583172852"
-	
 	# uStreamer --------------------------------------------------------------------------------------------------------------------
 	if [[ ${streamer_list_entry_selected[*]} =~ 'uStreamer' ]]; then
 		msg h "uStreamer Setup"
 		
+		# Note to users regarding camera hardware issues.
+		msg i "NOTE: If you happen to experience camera issues, try reducing frame rate and/or resolution. https://github.com/pikvm/ustreamer/issues/14#issuecomment-583172852"
+
 		# Raspbian / Debian Spasific Install
 		if [[ "$detected_os_id" == 'raspbian' ]] && [[ $detected_os_id_version -le 10 ]]; then
 			# Raspbian 10 (and older)
@@ -1086,7 +1089,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A08' ]]; then
 [Unit]
 Description=uStreamer Service | µStreamer is a lightweight and very quick server to stream MJPG video from any V4L2 device to the net. All new browsers have native support of this video format, as well as most video players such as mplayer, VLC etc. µStreamer is a part of the Pi-KVM project designed to stream VGA and HDMI screencast hardware data with the highest resolution and FPS possible.
 Documentation=https://github.com/pikvm/ustreamer
-After=syslog.target
+After=basic.target
 After=network.target
 Wants=network.target
 
@@ -1110,9 +1113,9 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
-# Output to syslog
-StandardOutput=syslog
-StandardError=syslog
+# Output to journal
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=uStreamer
 
 # uStreamer Info
@@ -1136,7 +1139,7 @@ EOF
 [Unit]
 Description="uStreamer Service Instance: %I | Default Device: /dev/video%i | Default Port: 808%i"
 Documentation=https://github.com/pikvm/ustreamer
-After=syslog.target
+After=basic.target
 After=network.target
 Wants=network.target
 
@@ -1160,9 +1163,9 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
-# Output to syslog
-StandardOutput=syslog
-StandardError=syslog
+# Output to journal
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=uStreamer
 
 # uStreamer Info
@@ -1345,7 +1348,7 @@ cat << EOF | sudo tee "/lib/systemd/system/mjpg-streamer.service" >/dev/null 2>&
 [Unit]
 Description=MJPEG-Streamer Service | A Linux-UVC streaming application with Pan/Tilt
 Documentation=https://github.com/jacksonliam/mjpg-streamer
-After=syslog.target
+After=basic.target
 After=network.target
 Wants=network.target
 
@@ -1369,9 +1372,9 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
-# Output to syslog
-StandardOutput=syslog
-StandardError=syslog
+# Output to journal
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=mjpg-streamer
 
 # = Option 1 = (Environment)
@@ -1427,7 +1430,7 @@ cat << EOF | sudo tee "/lib/systemd/system/mjpg-streamer@.service" >/dev/null 2>
 [Unit]
 Description="MJPEG-Streamer Service Instance: %I | Default Device: /dev/video%i | Default Port: 808%i"
 Documentation=https://github.com/jacksonliam/mjpg-streamer
-After=syslog.target
+After=basic.target
 After=network.target
 Wants=network.target
 
@@ -1451,9 +1454,9 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ProtectHome=true
 ProtectSystem=full
 
-# Output to syslog
-StandardOutput=syslog
-StandardError=syslog
+# Output to journal
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=mjpg-streamer
 
 # = Option 1 = (Environment)

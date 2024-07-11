@@ -5,9 +5,9 @@ This install script with get you started quickly with CNCjs on a [Raspberry Pi](
 ### 1. [Setup your Raspberry Pi](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up)
 
 Download & Install [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspberry-pi-os/) (previously called Raspbian) the official operating system for the Raspberry Pi.
-NOTE: Tested on [Raspberry Pi OS Lite x32 & x64 - April 4th 2022](https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-04-07/2022-04-04-raspios-bullseye-armhf-lite.img.xz) (x32 recommended)
+NOTE: Tested on [Raspberry Pi OS Full and Lite x64 - July 4th 2024](https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2024-07-04/2024-07-04-raspios-bookworm-arm64-lite.img.xz) (x64 recommended)
 
- 1. Download [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspberry-pi-os/), the [Lite](https://downloads.raspberrypi.org/raspios_lite_armhf_latest) edition is recommended.
+ 1. Download [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspberry-pi-os/), the [Lite x64](https://downloads.raspberrypi.org/raspios_lite_arm64_latest) edition is recommended.
  2. Then use [Raspberry Pi Imager](https://www.raspberrypi.org/downloads) to write the downloaded image to SD Card or Flash Drive. 
  3. Power-on you Raspberry Pi
  4. [Finish Setting up you Raspberry Pi](https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up)
