@@ -42,7 +42,7 @@ SYSTEM_CHECK=true  # Preform system check to insure this script is known to be c
 
 CNCJS_EXT_DIR="${HOME}/.cncjs"
 CNCJS_PORT=80
-cncjs_flags="--port ${CNCJS_PORT} --config \\\"${CNCJS_EXT_DIR}/cncrc.cfg\\\" --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
+cncjs_flags="--port ${CNCJS_PORT} --watch-directory \\\"${CNCJS_EXT_DIR}/watch\\\""  # --host ${HOST_IP}
 COMPATIBLE_OS_ID='^(rasp|de)bian$'
 COMPATIBLE_OS_ID_VERSION=11  # greater than or equal
 
@@ -773,7 +773,7 @@ Environment="NODE_ENV=production"
 # CNCjs Parameters
 $(cncjs --help | grep .  | sed '1d;$d' | sed 's/^/#/')
 # cncjs --help
-ExecStart=$(which cncjs) --port 80 --config \"${CNCJS_EXT_DIR}/.cncrc\" --watch-directory \"${HOME}/Documents\"
+ExecStart=$(which cncjs) --port 80 --watch-directory \"${HOME}/Documents\"
 
 # = Alternative Method = (EnvironmentFile)
 #EnvironmentFile=-/etc/cncjs.d/default.conf
@@ -1032,7 +1032,7 @@ sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/
 # --kiosk makes the browser occupy the entire screen.
 # If you want to kill the full-screen browser, use ALT-F4
 # If you omit --kiosk, the browser will start in a normal window
-chromium-browser  --incognito --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
+chromium-browser --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
 EOF
 	# --------------------------------------------
 
