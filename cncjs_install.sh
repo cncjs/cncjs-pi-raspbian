@@ -324,11 +324,11 @@ whiptail_message='Install script for CNCjs on Raspberry Pi w/ Raspberry Pi OS\n\
 
 # whiptail_list_entry_options=()	
 declare whiptail_list_entry_options=(\
-	"A00 System Check" "Preform system check to insure this script is known to be compatable with this OS." "YES" \
-	"A01 System Update" "Update System Pacakages." "YES" \
-	"A02 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependacies." "YES" \
-	"A03 Install CNCjs with NPM" "Install CNCjs unsing Node Package Manager." "YES" \
-	"A04 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extentions." "YES" \
+	"A00 System Check" "Perform system check to ensure this script is known to be compatible with this OS." "YES" \
+	"A01 System Update" "Update System Packages." "YES" \
+	"A02 Install/Update Node.js & NPM via Package Manager" "Install the required NodeJS Framework and Dependencies." "YES" \
+	"A03 Install CNCjs with NPM" "Install CNCjs using Node Package Manager." "YES" \
+	"A04 Install CNCjs Pendants & Widgets" "(Optional) Install CNCjs Extensions." "YES" \
 	"A05 Create CNCjs Service for Autostart" "Setup autostart so CNCjs starts when Raspberry Pi boots." "YES" \
 	# "A06 Setup IPtables" "(Optional) Allows to access web ui from 80 to make web access easier." "YES" \
 	"A07 Setup Web Kiosk" "(Optional) Setup Chrome Web Kiosk UI to start on boot." "NO" \
@@ -475,12 +475,12 @@ case $(grep -o "stage." /boot/issue.txt) in
     ;;
 esac
 
-# Check Compatability
+# Check Compatibility
 if [[ ${SYSTEM_CHECK} == true ]] && [[ ${main_list_entry_selected[*]} =~ "A00" ]] ; then
 	if [[ "$detected_os_id" =~ $COMPATIBLE_OS_ID ]] && [[ $detected_os_id_version -ge $COMPATIBLE_OS_ID_VERSION ]]; then
-		msg p "Detected OS is compatable with this install script."
+		msg p "Detected OS is compatible with this install script."
 	else
-		msg x "Detected OS is NOT compatable with this install script!"
+		msg x "Detected OS is NOT compatible with this install script!"
 		msg i "This installer is designed for the [Raspberry Pi](https://www.raspberrypi.org) | ${COMPATIBLE_OS_ID} >= v${COMPATIBLE_OS_ID_VERSION}"
 		exit 1;
 	fi
@@ -732,6 +732,7 @@ if [[ ${main_list_entry_selected[*]} =~ 'A05' ]]; then
 	# else
 	# 	CNCJS_PORT=80  # Defined in header
 	fi
+	[[ -z "${CNCJS_PORT}" ]] && CNCJS_PORT=80
 
 	# Service
 	msg i "Creating CNCjs Service w/ Systemd"
@@ -786,7 +787,10 @@ EOF
 	# -----------------------------------------------------
 
 	# Update the CNCjs Port
-	KIOSK_URL="$(whiptail --inputbox --title 'CNCjs Web UI Port' 'Port to use for CNCjs Web UI (default: 80 | 8000)' 8 39 "${CNCJS_PORT}" 3>&1 1>&2 2>&3)"
+	port_default="${CNCJS_PORT}"
+	CNCJS_PORT="$(whiptail --inputbox --title 'CNCjs Web UI Port' 'Port to use for CNCjs Web UI (default: 80 | 8000)' 8 39 "${port_default}" 3>&1 1>&2 2>&3)"
+	[[ -z "${CNCJS_PORT}" ]] && CNCJS_PORT="${port_default}"
+	cncjs_flags="$(sed -E "s|--port[[:space:]]+[[:digit:]]+|--port ${CNCJS_PORT}|" <<<"${cncjs_flags}")"
 	msg % "Editing CNCjs Service Start Port" \
 		"sudo sed -i \"/^#/! s|--port [[:digit:]]\+|--port ${CNCJS_PORT}|\" \"/etc/systemd/system/cncjs.service\" "
 
