@@ -939,7 +939,7 @@ EOF"
 		
 		# Web Browser | Chromium has a nice kiosk mode
 		msg % "Chromium Web Browser (for Kiosk Mode)" \
-			"sudo apt-get install -y --no-install-recommends chromium-browser"
+			"sudo apt-get install -y --no-install-recommends chromium"
 		###sudo apt-get install -y --no-install-recommends chromium-browser rpi-chromium-mods  # (Optional)
 		
 		# Output Openbox Setup w/ Directory Path
