@@ -15,8 +15,8 @@
 #   Builds from raspi-config https://github.com/RPi-Distro/raspi-config  (MIT license)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_TITLE="CNCjs Installer"
-SCRIPT_VERSION=1.4.7
-SCRIPT_DATE=$(date -I --date '2024/07/12')
+SCRIPT_VERSION=1.4.8
+SCRIPT_DATE=$(date -I --date '2026/04/24')
 SCRIPT_AUTHOR="Austin St. Aubin"
 SCRIPT_TITLE_FULL="${SCRIPT_TITLE} v${SCRIPT_VERSION}($(date -I -d ${SCRIPT_DATE})) by: ${SCRIPT_AUTHOR}"
 # ===========================================================================
@@ -939,7 +939,7 @@ EOF"
 		
 		# Web Browser | Chromium has a nice kiosk mode
 		msg % "Chromium Web Browser (for Kiosk Mode)" \
-			"sudo apt-get install -y --no-install-recommends chromium"
+			"sudo apt-get install -y --no-install-recommends chromium || sudo apt-get install -y --no-install-recommends chromium-browser"
 		###sudo apt-get install -y --no-install-recommends chromium-browser rpi-chromium-mods  # (Optional)
 		
 		# Output Openbox Setup w/ Directory Path
@@ -1036,7 +1036,7 @@ sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/
 # --kiosk makes the browser occupy the entire screen.
 # If you want to kill the full-screen browser, use ALT-F4
 # If you omit --kiosk, the browser will start in a normal window
-chromium-browser --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
+chromium --kiosk --noerrdialogs --disable-cache --disk-cache-dir=/dev/null --disk-cache-size=1 --disable-suggestions-service --disable-translate --disable-save-password-bubble --disable-session-crashed-bubble --disable-infobars --touch-events=enabled --no-touch-pinch --disable-gesture-typing "${KIOSK_URL}"
 EOF
 	# --------------------------------------------
 
